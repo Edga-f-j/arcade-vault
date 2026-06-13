@@ -8,14 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Arcade Vault — an online gaming platform where users play and compete for points. Uses **Next.js 16.2.9** (App Router), React 19.2.4, TypeScript, and Tailwind CSS v4.
 
-## Commands
-
-```bash
-npm run dev      # start dev server (Turbopack, outputs to .next/dev)
-npm run build    # production build (Turbopack by default)
-npm run start    # serve production build
-npm run lint     # run ESLint directly (NOT next lint — that's removed in v16)
-```
 
 ## Next.js 16 Breaking Changes
 
