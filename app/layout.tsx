@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Press_Start_2P, Courier_Prime, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "./_context/AuthContext";
+import Nav from "./_components/Nav";
 import "./globals.css";
 
 const pressStart2P = Press_Start_2P({
@@ -36,7 +37,12 @@ export default function RootLayout({
       className={`${pressStart2P.variable} ${courierPrime.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <div className="av-bg" />
+          <div className="av-noise" />
+          <Nav />
+          <main className="av-main">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
