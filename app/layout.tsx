@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Press_Start_2P, JetBrains_Mono } from "next/font/google";
+import { Press_Start_2P, Courier_Prime, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const pressStart2P = Press_Start_2P({
   weight: "400",
   variable: "--font-pixel",
+  subsets: ["latin"],
+});
+
+const courierPrime = Courier_Prime({
+  weight: ["400", "700"],
+  variable: "--font-courier",
   subsets: ["latin"],
 });
 
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${pressStart2P.variable} ${jetbrainsMono.variable}`}
+      className={`${pressStart2P.variable} ${courierPrime.variable} ${jetbrainsMono.variable}`}
     >
       <body>{children}</body>
     </html>

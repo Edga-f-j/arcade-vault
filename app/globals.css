@@ -18,7 +18,7 @@
   --line: rgba(0, 245, 255, 0.18);
   --line-2: rgba(255, 255, 255, 0.06);
   --pixel: var(--font-pixel), system-ui, monospace;
-  --mono: var(--font-mono), "Courier Prime", "Courier New", monospace;
+  --mono: var(--font-mono), var(--font-courier), "Courier Prime", "Courier New", monospace;
 }
 
 * { box-sizing: border-box; }
