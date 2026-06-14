@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { GAMES, Game } from '@/lib/data'
 
 // ===== useReveal =====
@@ -147,6 +148,7 @@ function MiniCard({ game, onClick }: { game: Game; onClick: () => void }) {
 
 // ===== Home =====
 export default function Home() {
+  const router = useRouter()
   useReveal()
   return (
     <div className="home fade-in">
@@ -196,6 +198,23 @@ export default function Home() {
               <div className="ft-desc">{f.d}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* GAMES PREVIEW */}
+      <section className="home-section reveal">
+        <div className="section-head">
+          <div className="kicker pixel neon-cyan">// 02</div>
+          <h2 className="section-title">JUEGOS DISPONIBLES AHORA</h2>
+          <div className="section-rule"></div>
+        </div>
+        <div className="mini-rail">
+          {GAMES.slice(0, 6).map(g => (
+            <MiniCard key={g.id} game={g} onClick={() => router.push(`/detalle/${g.id}`)} />
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Link href="/biblioteca" className="btn lg">VER TODOS LOS JUEGOS →</Link>
         </div>
       </section>
 
