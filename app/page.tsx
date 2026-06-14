@@ -218,6 +218,23 @@ export default function Home() {
         </div>
       </section>
 
+      {/* STATS */}
+      <section className="home-stats reveal">
+        <div className="stats-inner">
+          {[
+            { n: '12+',    u: 'JUEGOS',      s: 'Y CONTANDO'            },
+            { n: 'MILES',  u: 'DE PARTIDAS', s: 'JUGADAS CADA DÍA'      },
+            { n: 'GLOBAL', u: 'RANKING',     s: 'COMPITE CON EL MUNDO'  },
+          ].map((st, i) => (
+            <div key={i} className="stat-block" style={{ transitionDelay: `${i * 90}ms` }}>
+              <span className="stat-n neon-yellow">{st.n}</span>
+              <span className="stat-u pixel">{st.u}</span>
+              <span className="stat-s">{st.s}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   )
 }
