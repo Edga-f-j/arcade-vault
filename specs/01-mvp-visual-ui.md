@@ -1,6 +1,6 @@
 # 01 — MVP Visual: Arcade Vault UI
 
-- **Estado:** aprobado
+- **Estado:** implemented
 - **Fecha:** 2026-06-13
 - **Dependencias:** ninguna (spec inicial)
 - **Objetivo:** Implementar las 5 pantallas visuales de Arcade Vault
