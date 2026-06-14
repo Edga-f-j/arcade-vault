@@ -176,6 +176,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* WHY */}
+      <section className="home-section reveal">
+        <div className="section-head">
+          <div className="kicker pixel neon-magenta">// 01</div>
+          <h2 className="section-title">¿POR QUÉ ARCADE VAULT?</h2>
+          <div className="section-rule"></div>
+        </div>
+        <div className="feature-grid">
+          {[
+            { i: 'GAMEPAD', t: 'JUEGOS CLÁSICOS',  d: 'Arkanoid, Tetris, Snake y muchos más. Los mejores arcades de todos los tiempos en un solo lugar.',    c: 'cyan'    },
+            { i: 'FREE',    t: '100% GRATIS',       d: 'Sin suscripciones, sin pagos ocultos. Todos los juegos disponibles de forma gratuita.',               c: 'yellow'  },
+            { i: 'TROPHY',  t: 'LADDER BOARDS',     d: 'Compite con jugadores de todo el mundo. Escala el ranking y demuestra quién es el mejor.',            c: 'magenta' },
+            { i: 'ROCKET',  t: 'SIEMPRE CRECIENDO', d: 'Agregamos nuevos juegos constantemente. Vuelve seguido, siempre habrá algo nuevo que jugar.',         c: 'green'   },
+          ].map((f, i) => (
+            <div key={i} className={`feature-card ${f.c}`} style={{ transitionDelay: `${i * 80}ms` }}>
+              <FeatureIcon kind={f.i} />
+              <div className="ft-title pixel">{f.t}</div>
+              <div className="ft-desc">{f.d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   )
 }
