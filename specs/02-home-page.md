@@ -1,6 +1,6 @@
 # 02 — Home Page: Landing Page
 
-> **Status:** Aprobadp · **Depends on:** 01-mvp-visual-ui · **Date:** 2026-06-14
+> **Status:** Aprobado · **Depends on:** 01-mvp-visual-ui · **Date:** 2026-06-14
 > **Objective:** Implementar la Home page en `/` como landing page de Arcade Vault, fiel al diseño de `references/templates/home-about/home.jsx`.
 
 ---
