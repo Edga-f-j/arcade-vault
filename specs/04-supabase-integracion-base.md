@@ -13,7 +13,7 @@
 
 - Instalar dependencias: `@supabase/supabase-js` y `@supabase/ssr`
 - `lib/supabase/client.ts` — cliente browser con `createBrowserClient`
-- Variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
   documentadas en `.env.template` y con placeholders en `.env.local`
 - `types/database.ts` — tipos TypeScript generados desde el esquema del proyecto
   en Supabase Cloud vía MCP
@@ -47,16 +47,16 @@ cuando se añadan tablas.
    - Añadir a `.env.template`:
      ```
      NEXT_PUBLIC_SUPABASE_URL=
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=
+     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
      ```
    - Crear `.env.local` con los mismos campos vacíos para que el usuario
-     pegue sus valores reales (URL y anon key del proyecto Supabase)
+     pegue sus valores reales (URL y publishable key del proyecto Supabase)
    - Confirmar que `.env.local` está en `.gitignore`
 
 3. **Cliente browser** (`lib/supabase/client.ts`)
    - Crear `lib/supabase/client.ts` exportando una función `createClient`
      que instancia `createBrowserClient` de `@supabase/ssr` usando las
-     variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - Tipar el cliente con `Database` de `types/database.ts`
 
 4. **Tipos TypeScript** (`types/database.ts`)
@@ -74,7 +74,7 @@ cuando se añadan tablas.
 
 - [ ] `@supabase/supabase-js` y `@supabase/ssr` aparecen en `package.json`
 - [ ] `.env.template` documenta `NEXT_PUBLIC_SUPABASE_URL` y
-      `NEXT_PUBLIC_SUPABASE_ANON_KEY` con campos vacíos
+      `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` con campos vacíos
 - [ ] `.env.local` existe con los mismos campos vacíos listos para pegar
       los valores reales
 - [ ] `.env.local` está en `.gitignore`
@@ -108,7 +108,11 @@ cuando se añadan tablas.
   estar vacío, tener el archivo desde el inicio permite tipar el cliente
   desde el primer uso y evita añadir `any` temporal que luego hay que limpiar.
 
-- **Variables con prefijo `NEXT_PUBLIC_`** — URL y anon key son seguras para
-  exponer al cliente (son públicas por diseño en Supabase). Las claves
+- **Variables con prefijo `NEXT_PUBLIC_`** — URL y publishable key son seguras
+  para exponer al cliente (son públicas por diseño en Supabase). Las claves
   secretas (service role key) nunca llevan `NEXT_PUBLIC_` y no se usan en
   este spec.
+
+- **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en lugar de `NEXT_PUBLIC_SUPABASE_ANON_KEY`** —
+  las versiones recientes de Supabase Cloud renombraron el "anon key" a
+  "publishable key". Se usa el nombre que provee el dashboard actual del proyecto.
