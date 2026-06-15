@@ -1,6 +1,6 @@
 # 04 — Supabase: Integración Base
 
-> **Status:** Aprobado · **Depends on:** ninguno · **Date:** 2026-06-15
+> **Status:** Implementado · **Depends on:** ninguno · **Date:** 2026-06-15
 > **Objective:** Instalar y configurar Supabase en Arcade Vault con cliente
 > browser (`createBrowserClient`), variables de entorno documentadas y tipos
 > TypeScript generados desde el esquema del proyecto en `types/database.ts`.
@@ -72,17 +72,17 @@ cuando se añadan tablas.
 
 ## Acceptance criteria
 
-- [ ] `@supabase/supabase-js` y `@supabase/ssr` aparecen en `package.json`
-- [ ] `.env.template` documenta `NEXT_PUBLIC_SUPABASE_URL` y
+- [x] `@supabase/supabase-js` y `@supabase/ssr` aparecen en `package.json`
+- [x] `.env.template` documenta `NEXT_PUBLIC_SUPABASE_URL` y
       `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` con campos vacíos
-- [ ] `.env.local` existe con los mismos campos vacíos listos para pegar
+- [x] `.env.local` existe con los mismos campos vacíos listos para pegar
       los valores reales
-- [ ] `.env.local` está en `.gitignore`
-- [ ] `lib/supabase/client.ts` exporta una función `createClient` que
+- [x] `.env.local` está en `.gitignore`
+- [x] `lib/supabase/client.ts` exporta una función `createClient` que
       devuelve un cliente Supabase tipado con `Database`
-- [ ] `types/database.ts` existe y exporta el tipo `Database`
-- [ ] `tsc --noEmit` pasa sin errores
-- [ ] Las rutas existentes (`/`, `/about`, `/biblioteca`, `/detalle`,
+- [x] `types/database.ts` existe y exporta el tipo `Database`
+- [x] `tsc --noEmit` pasa sin errores
+- [x] Las rutas existentes (`/`, `/about`, `/biblioteca`, `/detalle`,
       `/player`, `/auth`, `/salon`) siguen funcionando sin cambios
 
 ---
