@@ -1,6 +1,6 @@
 # 03 — About Page + Contact Form con Resend
 
-> **Status:** Aprobado · **Depends on:** 01-mvp-visual-ui, 02-home-page · **Date:** 2026-06-14
+> **Status:** Implementado · **Depends on:** 01-mvp-visual-ui, 02-home-page · **Date:** 2026-06-14
 > **Objective:** Implementar la página `/about` con la sección "Acerca de" y un
 > formulario de contacto que envía correos reales usando Resend, fiel al diseño
 > de `references/templates/home-about/about.jsx`. El destinatario del correo
