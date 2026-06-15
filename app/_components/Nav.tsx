@@ -45,6 +45,9 @@ export default function Nav() {
           <Link href="/salon" className={isActive("/salon") ? "active" : ""}>
             Salón de la Fama
           </Link>
+          <Link href="/about" className={isActive("/about") ? "active" : ""}>
+            ACERCA DE
+          </Link>
         </div>
 
         <div className="spacer" />
@@ -86,6 +89,9 @@ export default function Nav() {
         </Link>
         <Link href="/salon" className={isActive("/salon") ? "active" : ""} onClick={close}>
           Salón de la Fama
+        </Link>
+        <Link href="/about" className={isActive("/about") ? "active" : ""} onClick={close}>
+          ACERCA DE
         </Link>
         {user ? (
           <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
