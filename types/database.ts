@@ -14,7 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          description: string
+          id: string
+          image_url: string | null
+          name: string
+          route: string
+          slug: string
+        }
+        Insert: {
+          description: string
+          id?: string
+          image_url?: string | null
+          name: string
+          route: string
+          slug: string
+        }
+        Update: {
+          description?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          route?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      scores: {
+        Row: {
+          created_at: string
+          game_slug: string
+          id: string
+          player_name: string
+          score: number
+        }
+        Insert: {
+          created_at?: string
+          game_slug: string
+          id?: string
+          player_name: string
+          score: number
+        }
+        Update: {
+          created_at?: string
+          game_slug?: string
+          id?: string
+          player_name?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scores_game_slug_fkey"
+            columns: ["game_slug"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
