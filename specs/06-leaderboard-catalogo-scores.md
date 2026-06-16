@@ -1,6 +1,6 @@
 # 06 — Leaderboard, Catálogo de Juegos y Scores
 
-> **Status:** aprobado · **Depends on:** 05-juego-asteroids · **Date:** 2026-06-16
+> **Status:** implementado · **Depends on:** 05-juego-asteroids · **Date:** 2026-06-16
 > **Objective:** Implementar catálogo de juegos (`games`) y scores por jugador
 > (`scores`) en Supabase, flujo de nombre-de-jugador con localStorage antes de
 > cada partida en Asteroids, guardado de score al game over o al salir, y
