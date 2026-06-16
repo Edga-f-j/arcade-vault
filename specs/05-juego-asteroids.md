@@ -1,30 +1,30 @@
 # 05 — Juego: Asteroids
 
-> **Status:** Aprobado · **Depends on:** 04-supabase-integracion-base · **Date:** 2026-06-15
+> **Status:** Implementado · **Depends on:** 04-supabase-integracion-base · **Date:** 2026-06-15
 > **Objective:** Integrar el juego Asteroids (Canvas/JS vanilla) en la plataforma
-> como página pública `/games/asteroids`, con el game.js convertido a módulo ES
-> y montado desde un componente React `'use client'`.
+> como página pública `/games/asteroids`, con el game.js convertido a módulo ES,
+> HUD externo React consistente con el resto de juegos, y canvas envuelto en el
+> componente visual CRT de la plataforma.
 
 ---
 
 ## Scope
 
 **In:**
-- `app/games/asteroids/page.tsx` — Server Component, usa el layout del sitio
-  (header/nav de la plataforma visible encima del canvas)
-- `app/games/asteroids/AsteroidsGame.tsx` — componente `'use client'` que monta
-  el `<canvas>` 800×600 y arranca el juego vía `useEffect`
-- `app/games/asteroids/game.ts` — `game.js` del template convertido a módulo ES:
-  encapsula todo el estado, exporta `startGame(canvas): () => void`
-- El HUD (score, nivel, vidas) se sigue dibujando dentro del canvas (sin cambios
-  al JS de dibujo)
+- `app/games/asteroids/game.ts` — `game.js` convertido a módulo ES: encapsula todo
+  el estado, exporta `startGame(canvas, onStateChange?)` y devuelve `{ cleanup, setPaused }`
+- `app/games/asteroids/AsteroidsGame.tsx` — componente `'use client'` con HUD externo
+  (`.player-hud`) + canvas envuelto en `.crt` / `.crt-screen`
+- `app/games/asteroids/page.tsx` — Server Component que renderiza `<AsteroidsGame />`
+- HUD externo React (jugador, puntuación, vidas ♥, nivel) actualizado vía callback
+- Botón PAUSA (congela el loop del juego) y SALIR (vuelve a `/`)
+- Flechas y Space con `preventDefault` para evitar scroll de página
 - Acceso público — no requiere autenticación
 
 **Out of scope:**
 - Canvas responsivo — tamaño fijo 800×600
 - Guardar puntajes en Supabase — queda para un spec posterior
 - Autenticación para jugar — queda para cuando se añadan puntajes
-- Botón de pausa UI fuera del canvas
 - Soporte táctil / móvil
 - Añadir el juego al listado/navegación de la plataforma
 
@@ -34,73 +34,117 @@
 
 1. **Convertir `game.js` a módulo ES** (`app/games/asteroids/game.ts`)
    - Copiar `references/templates/started-games/02-asteroids/game.js`
-   - Reemplazar las referencias globales a `canvas`/`ctx` por parámetros
-     recibidos en la función exportada
-   - Encapsular todo el estado del juego (`ship`, `bullets`, `asteroids`, etc.)
-     dentro de `startGame`
-   - Exportar una sola función:
+   - Recibir `canvas` como parámetro; obtener `ctx` de él
+   - Encapsular todo el estado dentro de `startGame`
+   - Firma exportada:
      ```ts
-     export function startGame(canvas: HTMLCanvasElement): () => void
+     export function startGame(
+       canvas: HTMLCanvasElement,
+       onStateChange?: (state: { score: number; lives: number; level: number }) => void
+     ): { cleanup: () => void; setPaused: (p: boolean) => void }
      ```
-     que inicia el loop y devuelve una función de limpieza que cancela
-     `requestAnimationFrame` y elimina los event listeners de teclado
+   - `onStateChange` se llama solo cuando score/lives/level cambian (no cada frame)
+   - `setPaused(true)` congela el loop sin cancelar el RAF; `lastTime` se resetea
+     al despausar para evitar spike de `dt`
+   - `e.preventDefault()` en keydown para `ArrowLeft/Right/Up/Down/Space`
+   - `cleanup` cancela RAF y remueve ambos event listeners
 
 2. **Componente cliente** (`app/games/asteroids/AsteroidsGame.tsx`)
-   - `'use client'`
-   - `useRef` para el `<canvas>`
-   - `useEffect` que llama `startGame(canvasRef.current)` al montar y ejecuta
-     la función de limpieza al desmontar
-   - Renderiza solo `<canvas width={800} height={600} />`
+   - `'use client'` — usa `useRef`, `useState`, `useEffect`
+   - `useState` para `score`, `lives`, `level`, `paused`
+   - `useRef` para guardar `setPaused` del juego (no re-ejecuta el effect)
+   - `useEffect` llama `startGame(canvasRef.current, callback)` y retorna `cleanup`
+   - Estructura visual (igual que los demás juegos de la plataforma):
+     ```
+     .av-player.fade-in
+       .player-hud                        ← HUD externo con stats + botones
+         .hud-stat  (jugador / cyan)
+         .hud-stat  (puntuación / cyan)
+         .hud-stat.lives  (vidas / magenta ♥)
+         .hud-stat.level  (nivel / yellow)
+         .hud-actions
+           <button .btn.yellow>  PAUSA / REANUDAR
+           <Link .btn.ghost>     SALIR → /
+       .crt
+         .crt-screen
+           <canvas width=800 height=600 style="width:100%;height:100%">
+           overlay .crt-content (solo visible cuando paused)
+         .crt-bottom  (LED verde + info técnica)
+     ```
 
 3. **Página** (`app/games/asteroids/page.tsx`)
-   - Server Component
-   - Centra `<AsteroidsGame />` en la página dentro del layout del sitio
+   - Server Component sin wrapper extra — el `.av-player` del componente
+     ya provee el layout y el padding correcto
 
 4. **Verificación**
    - `tsc --noEmit` pasa sin errores
-   - El juego arranca en `/games/asteroids`, responde a teclado y el HUD
-     muestra score/nivel/vidas correctamente
+   - El juego arranca en `/games/asteroids`, responde a teclado
+   - HUD externo muestra score/nivel/vidas y se actualiza en tiempo real
+   - PAUSA congela el juego y muestra overlay; REANUDAR lo retoma
+   - Flechas no causan scroll de la página
 
 ---
 
 ## Acceptance criteria
 
-- [ ] `app/games/asteroids/game.ts` existe y exporta únicamente `startGame`
-- [ ] `startGame` recibe un `HTMLCanvasElement` y devuelve una función de limpieza
-- [ ] La función de limpieza cancela el `requestAnimationFrame` loop
-- [ ] La función de limpieza elimina los event listeners de teclado (`keydown`/`keyup`)
-- [ ] `app/games/asteroids/AsteroidsGame.tsx` tiene `'use client'` y monta el canvas
-      con `useEffect`
-- [ ] `app/games/asteroids/page.tsx` existe como Server Component
-- [ ] La ruta `/games/asteroids` carga el juego sin errores de consola
-- [ ] El juego responde a `ArrowLeft`, `ArrowRight`, `ArrowUp` y `Space`
-- [ ] El HUD muestra score, nivel y vidas dentro del canvas
-- [ ] Al desmontar el componente no quedan listeners ni loops activos (sin memory leaks)
-- [ ] `tsc --noEmit` pasa sin errores
-- [ ] Las rutas existentes de la plataforma no se ven afectadas
+- [x] `app/games/asteroids/game.ts` existe y exporta únicamente `startGame`
+- [x] `startGame` recibe `HTMLCanvasElement` + callback opcional y devuelve `{ cleanup, setPaused }`
+- [x] `cleanup` cancela el `requestAnimationFrame` loop
+- [x] `cleanup` elimina los event listeners de teclado (`keydown`/`keyup`)
+- [x] `AsteroidsGame.tsx` tiene `'use client'` y monta el canvas con `useEffect`
+- [x] `page.tsx` existe como Server Component
+- [x] La ruta `/games/asteroids` carga el juego sin errores de consola
+- [x] El juego responde a `ArrowLeft`, `ArrowRight`, `ArrowUp` y `Space`
+- [x] Las flechas no causan scroll de la página (`preventDefault`)
+- [x] HUD externo muestra jugador, score, vidas (♥) y nivel actualizados en tiempo real
+- [x] El canvas está envuelto en `.crt` / `.crt-screen` (bordes redondeados + brillo cyan)
+- [x] Botón PAUSA congela el loop; REANUDAR lo retoma sin spike de dt
+- [x] Al desmontar no quedan listeners ni loops activos (sin memory leaks)
+- [x] `tsc --noEmit` pasa sin errores
+- [x] Las rutas existentes de la plataforma no se ven afectadas
 
 ---
 
 ## Decisions
 
-- **`app/games/asteroids/` en lugar de `games/` en la raíz** — colocar los
-  archivos dentro del App Router directory mantiene la convención del proyecto
-  y facilita el co-location de futuros assets del juego junto a su ruta.
+- **`startGame` devuelve objeto en lugar de función** — se necesita exponer tanto
+  `cleanup` como `setPaused`. El HUD externo requiere comunicación bidireccional:
+  React controla pausa, el juego notifica estado.
 
-- **`startGame(canvas): () => void` como única API pública** — encapsular todo
-  el estado dentro de la función evita globals y hace el ciclo de vida
-  predecible para React: montar = iniciar, desmontar = limpiar.
+- **`onStateChange` con diff** — el callback solo se dispara cuando score/lives/level
+  cambian (comparación con valores previos), evitando 60 re-renders por segundo.
 
-- **HUD permanece en el canvas** — mover score/vidas a React requeriría
-  exponer estado del juego vía callbacks o refs. El HUD actual dibujado en
-  canvas es suficiente y evita acoplar el JS del juego al sistema de estado
-  de React en este spec.
+- **HUD externo en lugar de canvas-interno** — los demás juegos de la plataforma usan
+  `.player-hud` con clases CSS del design system (`.hud-stat`, `.hud-stat.lives`,
+  `.hud-stat.level`). Para consistencia visual se migró el HUD al DOM.
+  El HUD interno del canvas se conserva como fallback visual durante gameplay.
 
-- **Canvas fijo 800×600** — se pospone la responsividad para no modificar la
-  lógica de colisión ni las constantes `W`/`H` del juego en este spec.
+- **`.crt` / `.crt-screen` para el canvas** — clases ya definidas en `globals.css`
+  que dan bordes redondeados (`border-radius: 12px/28px`), brillo cyan en la sombra
+  y efecto de scanlines. El canvas usa `style="width:100%;height:100%"` para
+  llenar la pantalla CRT manteniendo las coordenadas lógicas 800×600.
 
-- **Sin score en Supabase** — guardado de puntajes queda para cuando se
-  implemente autenticación; ambas features van juntas en un spec posterior.
+- **`lastTime = null` al pausar** — evita que al reanudar el `dt` acumule todo el
+  tiempo pausado y cause un salto de física.
 
-- **Acceso público** — la autenticación se añadirá en el spec de scores,
-  donde tendrá sentido restringir el acceso a usuarios con sesión activa.
+- **`page.tsx` sin wrapper** — `.av-player` dentro del componente ya tiene
+  `max-width: 1100px; margin: 32px auto; padding: 0 24px 64px`, consistente
+  con el resto de páginas de juego.
+
+---
+
+## Lecciones para futuros juegos
+
+Al escribir el spec de un juego nuevo, incluir explícitamente:
+
+```md
+**Referencia de UI:** seguir la estructura de `app/player/[id]/page.tsx` y el
+patrón ya establecido en `app/games/asteroids/AsteroidsGame.tsx`:
+- Wrapper `.av-player.fade-in`
+- HUD externo `.player-hud` con score/vidas/nivel + botones PAUSA/SALIR
+- Canvas envuelto en `.crt` > `.crt-screen` (con `.crt-bottom`)
+- `startGame` expone estado vía `onStateChange` y control vía `setPaused`
+```
+
+Sin esta referencia el agente implementa el HUD dentro del canvas (más simple)
+en lugar de usar el design system de la plataforma.

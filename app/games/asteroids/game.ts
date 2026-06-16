@@ -16,14 +16,21 @@ const dist = ( a: { x: number; y: number }, b: { x: number; y: number } ) =>
 const rand = ( min: number, max: number ) => min + Math.random() * ( max - min );
 const randInt = ( min: number, max: number ) => Math.floor( rand( min, max + 1 ) );
 
-export function startGame( canvas: HTMLCanvasElement ): () => void {
+type GameState = { score: number; lives: number; level: number };
+
+export function startGame(
+  canvas: HTMLCanvasElement,
+  onStateChange?: ( state: GameState ) => void
+): { cleanup: () => void; setPaused: ( p: boolean ) => void } {
   const ctx = canvas.getContext( '2d' )!;
 
   // ── Input ──────────────────────────────────────────────────────────────────
   const keys: Record<string, boolean> = {};
   const justPressed: Record<string, boolean> = {};
 
+  const GAME_KEYS = new Set( [ 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space' ] );
   const onKeyDown = ( e: KeyboardEvent ) => {
+    if ( GAME_KEYS.has( e.code ) ) e.preventDefault();
     if ( !keys[ e.code ] ) justPressed[ e.code ] = true;
     keys[ e.code ] = true;
   };
@@ -294,6 +301,16 @@ export function startGame( canvas: HTMLCanvasElement ): () => void {
   let deadTimer: number;
   let powerUpSpawned: boolean;
   let killsSinceSpawn: number;
+  let isPaused = false;
+  let prevScore = -1, prevLives = -1, prevLevel = -1;
+
+  function notifyState() {
+    if ( !onStateChange ) return;
+    if ( score !== prevScore || lives !== prevLives || level !== prevLevel ) {
+      prevScore = score; prevLives = lives; prevLevel = level;
+      onStateChange( { score, lives, level } );
+    }
+  }
 
   function spawnAsteroids( count: number ) {
     const SAFE_DIST = 130;
@@ -409,6 +426,7 @@ export function startGame( canvas: HTMLCanvasElement ): () => void {
     }
 
     if ( asteroids.length === 0 ) nextLevel();
+    notifyState();
   }
 
   // ── Draw ───────────────────────────────────────────────────────────────────
@@ -432,6 +450,7 @@ export function startGame( canvas: HTMLCanvasElement ): () => void {
   function drawHUD() {
     ctx.fillStyle = '#fff';
     ctx.font = '15px monospace';
+    ctx.textBaseline = 'alphabetic';
 
     ctx.textAlign = 'left';
     ctx.fillText( `SCORE  ${ score }`, 14, 26 );
@@ -480,19 +499,27 @@ export function startGame( canvas: HTMLCanvasElement ): () => void {
   let lastTime: number | null = null;
 
   function loop( ts: number ) {
-    const dt = lastTime === null ? 0 : Math.min( ( ts - lastTime ) / 1000, 0.05 );
-    lastTime = ts;
-    update( dt );
-    draw();
+    if ( !isPaused ) {
+      const dt = lastTime === null ? 0 : Math.min( ( ts - lastTime ) / 1000, 0.05 );
+      lastTime = ts;
+      update( dt );
+      draw();
+    } else {
+      lastTime = null;
+    }
     rafId = requestAnimationFrame( loop );
   }
 
   initGame();
+  notifyState();
   rafId = requestAnimationFrame( loop );
 
-  return () => {
-    cancelAnimationFrame( rafId );
-    window.removeEventListener( 'keydown', onKeyDown );
-    window.removeEventListener( 'keyup', onKeyUp );
+  return {
+    cleanup: () => {
+      cancelAnimationFrame( rafId );
+      window.removeEventListener( 'keydown', onKeyDown );
+      window.removeEventListener( 'keyup', onKeyUp );
+    },
+    setPaused: ( p: boolean ) => { isPaused = p; },
   };
 }
