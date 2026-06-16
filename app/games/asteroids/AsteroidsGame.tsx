@@ -1,12 +1,15 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { startGame } from './game';
 
 export default function AsteroidsGame() {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
+  const scoreSaved = useRef( false );
 
   const [ score, setScore ] = useState( 0 );
   const [ lives, setLives ] = useState( 3 );
@@ -26,10 +29,27 @@ export default function AsteroidsGame() {
       setScore( state.score );
       setLives( state.lives );
       setLevel( state.level );
+      if ( state.lives === 0 ) saveScore( state.score );
     } );
     setPausedRef.current = gamePause;
     return cleanup;
   }, [ gameStarted ] );
+
+  async function saveScore( value: number ) {
+    if ( scoreSaved.current || value <= 0 ) return;
+    scoreSaved.current = true;
+    const supabase = createClient();
+    await supabase.from( 'scores' ).insert( {
+      player_name: playerName || 'INVITADO',
+      game_slug: 'asteroids',
+      score: value,
+    } );
+  }
+
+  async function handleExit() {
+    await saveScore( score );
+    router.push( '/' );
+  }
 
   function handleStart() {
     const name = playerName.trim() || 'INVITADO';
@@ -74,7 +94,7 @@ export default function AsteroidsGame() {
           <button className="btn yellow" onClick={ togglePause }>
             { paused ? 'REANUDAR' : 'PAUSA' }
           </button>
-          <Link href="/" className="btn ghost">SALIR</Link>
+          <button className="btn ghost" onClick={ handleExit }>SALIR</button>
         </div>
       </div>
 
