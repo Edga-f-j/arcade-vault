@@ -106,7 +106,7 @@ export default function SnakeGame() {
       </div>
 
       {/* CRT + canvas */}
-      <div className="crt">
+      <div className="crt" style={{ width: 'fit-content', margin: '0 auto' }}>
         <div className="crt-screen" style={{ width: 600, height: 600 }}>
 
           {/* Modal nombre */}
