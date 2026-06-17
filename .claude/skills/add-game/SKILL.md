@@ -36,6 +36,13 @@ Además de lo que indica `/spec`, leer:
 - Los dos specs más recientes — para mantener consistencia de estilo
 - `app/games/asteroids/AsteroidsGame.tsx` — patrón canónico del componente
 - `app/games/asteroids/game.ts` (primeras 60 líneas) — patrón canónico del módulo
+- La definición actual de la tabla `games` en Supabase (vía MCP `list_tables` o
+  `types/database.ts`). Si **no** tiene columnas para categoría/color de acento y
+  `/biblioteca` muestra esos elementos visualmente en sus tarjetas, **detener** y
+  preguntar al usuario cómo se va a resolver antes de seguir: (a) agregar esas
+  columnas a `games` en un spec de migración aparte, o (b) derivarlas en el
+  frontend con un mapa `slug → categoría/color`. No generar más specs de juego
+  asumiendo que el tema ya está resuelto si nunca se confirmó explícitamente.
 
 ### Fase 1b — Detectar modo de entrada
 
@@ -67,6 +74,10 @@ en `$ARGUMENTS` o en el modo detectado — no dejar preguntas completamente abie
 2. **name** — nombre para mostrar en la UI (ej. "Tetris").
 3. **description** — 1-3 frases para la tarjeta y la página de detalle.
 4. **image_url** — ¿hay portada disponible? Si no, queda `null` (nullable) y se añade después.
+5. **Categoría y color de acento** — siguiendo lo que se resolvió en la Fase 1, pedir el
+   valor concreto para este juego (ej. categoría `ARCADE`/`PUZZLE`/`SHOOTER` y color
+   `cyan`/`magenta`/`yellow`/`green`). Si esto todavía no se resolvió a nivel de proyecto,
+   no continuar — volver a la Fase 1.
 
 **Bloque B — Mecánica**
 
@@ -76,7 +87,11 @@ en `$ARGUMENTS` o en el modo detectado — no dejar preguntas completamente abie
 3. **Estado HUD** — ¿qué valores expone el juego al HUD React? Opciones estándar:
    `score/lives/level`. Si el juego no tiene alguno, preguntar si se omite o se sustituye
    por otro campo (`lines`, `balls`, `time`, etc.). Documentar el HUD custom en el spec.
-4. **Condición de game over** — ¿cuándo termina la partida?
+4. **Condición(es) de fin de partida** — ¿cuándo termina la partida? **¿Hay más de una
+   condición de fin?** (ej. derrota por `lives === 0` Y victoria por completar niveles).
+   Si hay más de una, el `onStateChange` debe incluir un campo explícito
+   `status: 'playing' | 'gameover' | 'win' | ...` en vez de que React infiera el
+   resultado a partir de `score`/`lives`/`level` — ver Fase 3, Data model.
 5. **Pausa** — confirmar explícitamente que el game loop respeta `isPaused` y resetea
    `lastTime = null` al reanudar (patrón `AsteroidsGame`, evita el salto de física al
    despausar).
@@ -118,11 +133,22 @@ El contenido de cada sección debe incluir los siguientes elementos específicos
 type GameState = { score: number; <campo2>: number; level: number }
 // condición de game-over: <descripción>
 ```
+Si el juego tiene más de una condición de fin de partida (ver Bloque B, pregunta 4),
+ampliar el tipo con un campo de estado explícito en lugar de inferir el resultado:
+```ts
+type GameState = {
+  score: number; <campo2>: number; level: number
+  status: 'playing' | 'gameover' | 'win'
+}
+```
+
 Y la fila de Supabase:
 ```sql
 INSERT INTO games (slug, name, description, image_url, route)
 VALUES ('<slug>', '<name>', '<description>', <NULL o 'url'>, '/games/<slug>');
 ```
+Si la tabla `games` ya tiene columnas de categoría/color (ver Fase 1), incluirlas también
+en el INSERT con los valores confirmados en el Bloque A.
 
 **Implementation plan — siempre estos pasos en este orden:**
 1. `app/games/<slug>/game.ts` — módulo puro (sin imports React/Next/Supabase)
@@ -138,6 +164,8 @@ VALUES ('<slug>', '<name>', '<description>', <NULL o 'url'>, '/games/<slug>');
 - [ ] `startGame` devuelve `{ cleanup, setPaused }`
 - [ ] Modal de nombre aparece antes del canvas; pre-rellena desde `localStorage` si existe
 - [ ] Score se inserta una sola vez (guard `scoreSaved.current`)
+- [ ] Si hay más de una condición de fin, cada una dispara su modal correcto según `status`
+      y el score se guarda en ambos casos
 - [ ] `/biblioteca` muestra la tarjeta del nuevo juego
 - [ ] `npx tsc --noEmit` pasa sin errores
 
@@ -147,6 +175,8 @@ VALUES ('<slug>', '<name>', '<description>', <NULL o 'url'>, '/games/<slug>');
 - `lastTime = null` en rama paused (evita spike de dt al reanudar)
 - `scoreSaved` ref en lugar de estado (evita race condition game-over + SALIR)
 - `game_slug` igual al `slug` de `games` (requisito de la FK)
+- Si aplica: `onStateChange` incluye campo `status` (justificar por qué `score`/`lives`/
+  `level` por sí solos no bastan para distinguir el resultado)
 
 ### Fase 4 — Guardar el spec
 
@@ -167,4 +197,10 @@ Seguir exactamente las reglas de `/spec`:
 - `scoreSaved` ref para evitar doble insert mencionado en el plan
 - `game_slug` coincide exactamente con el `slug` de la tabla `games`
 - Ruta `/games/<slug>` — no `/games` ni `/leaderboard`
+- Si el juego tiene más de una condición de fin de partida, `onStateChange` incluye un
+  campo `status` explícito (`'playing' | 'gameover' | 'win' | ...`) — nunca se infiere
+  el resultado solo a partir de `score`/`lives`/`level`
+- Ninguna sección del spec se duplica en otra parte del documento (ej. una lista de
+  "fuera de alcance" no se repite en una sección adicional al final) — cada tipo de
+  contenido vive en una sola sección
 - No hay código de implementación en el spec — solo descripción y pseudocódigo de estructura
