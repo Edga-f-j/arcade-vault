@@ -1,6 +1,6 @@
 # SPEC 08 — Juego: Arkanoid
 
-> **Status:** aprobado · **Depends on:** 06-leaderboard-catalogo-scores · **Date:** 2026-06-17
+> **Status:** implementado · **Depends on:** 06-leaderboard-catalogo-scores · **Date:** 2026-06-17
 > **Objective:** Integrar Arkanoid (Canvas/JS vanilla) en la plataforma como página
 > pública `/games/arkanoid`, con `game.ts` encapsulado, HUD externo React
 > (jugador/puntuación/vidas/nivel), sprites y sonidos del spritesheet original,
