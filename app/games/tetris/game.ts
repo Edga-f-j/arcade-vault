@@ -45,7 +45,7 @@ const LINE_SCORES = [0, 100, 300, 500, 800]
 
 type Cell = string | null
 type Matrix = Cell[][]
-type GameState = { score: number; lines: number; level: number }
+type GameState = { score: number; lines: number; level: number; gameOver?: boolean }
 
 function createMatrix(rows: number, cols: number): Matrix {
   return Array.from({ length: rows }, () => Array(cols).fill(null))
@@ -169,8 +169,7 @@ export function startGame(
   function endGame() {
     isOver = true
     cancelAnimationFrame(rafId)
-    notifyState()
-    onStateChange?.({ score, lines, level })
+    onStateChange?.({ score, lines, level, gameOver: true })
   }
 
   function drawBlock(context: CanvasRenderingContext2D, x: number, y: number, color: string) {
