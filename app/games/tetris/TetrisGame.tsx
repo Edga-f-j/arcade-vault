@@ -16,6 +16,7 @@ export default function TetrisGame() {
   const [ lines, setLines ] = useState( 0 );
   const [ level, setLevel ] = useState( 1 );
   const [ paused, setPaused ] = useState( false );
+  const [ gameOver, setGameOver ] = useState( false );
   const [ playerName, setPlayerName ] = useState( '' );
   const [ gameStarted, setGameStarted ] = useState( false );
 
@@ -33,7 +34,10 @@ export default function TetrisGame() {
         setScore( state.score );
         setLines( state.lines );
         setLevel( state.level );
-        if ( state.gameOver ) saveScore( state.score );
+        if ( state.gameOver ) {
+          setGameOver( true );
+          saveScore( state.score );
+        }
       }
     );
     setPausedRef.current = gamePause;
@@ -100,7 +104,7 @@ export default function TetrisGame() {
       </div>
 
       {/* ── CRT + canvas + preview ───────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center' }}>
         <div className="crt">
           <div className="crt-screen" style={{ width: 300, height: 600 }}>
             { !gameStarted && (
@@ -140,13 +144,25 @@ export default function TetrisGame() {
               height={ 600 }
               style={{ display: 'block' }}
             />
-            { paused && (
+            { paused && !gameOver && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.65)', zIndex: 5 }}>
                 <div style={{ textAlign: 'center' }}>
                   <div className="pixel neon-yellow" style={{ fontSize: 22 }}>EN PAUSA</div>
                   <div className="mono" style={{ fontSize: 11, color: 'var(--ink-dim)', marginTop: 10, letterSpacing: '0.16em' }}>
                     PULSA REANUDAR PARA CONTINUAR
                   </div>
+                </div>
+              </div>
+            ) }
+            { gameOver && (
+              <div className="crt-content" style={{ background: 'rgba(0,0,0,0.85)', zIndex: 15 }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+                  <div className="pixel neon-yellow" style={{ fontSize: 22 }}>GAME OVER</div>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--ink-dim)', letterSpacing: '0.16em' }}>
+                    PUNTUACIÓN FINAL
+                  </div>
+                  <div className="v" style={{ fontSize: 28 }}>{ score.toLocaleString( 'es-ES' ) }</div>
+                  <button className="btn yellow" onClick={ handleExit }>SALIR</button>
                 </div>
               </div>
             ) }
