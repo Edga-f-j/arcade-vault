@@ -1,6 +1,6 @@
 # SPEC 10 — Salón de la fama por juego
 
-> **Status:** aprobado · **Depends on:** 06-leaderboard-catalogo-scores · **Date:** 2026-06-17
+> **Status:** implementado · **Depends on:** 06-leaderboard-catalogo-scores · **Date:** 2026-06-17
 > **Objective:** Reemplazar el leaderboard global de `/salon` por pestañas (una por juego) que muestran cada una el top-10 de ese juego con columnas posición, jugador, puntaje y fecha.
 
 ---

@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Arcade Vault — an online gaming platform where users play and compete for points. Uses **Next.js 16.2.9** (App Router), React 19.2.4, TypeScript, and Tailwind CSS v4.
 
+Stack: `@supabase/supabase-js` + `@supabase/ssr` (database & auth), `resend` (email), Turbopack (default bundler).
+
 
 ## Next.js 16 Breaking Changes
 
@@ -32,15 +34,60 @@ Arcade Vault — an online gaming platform where users play and compete for poin
 - **`next/legacy/image` deprecated** — use `next/image`.
 - **AMP fully removed.**
 
+
 ## Architecture
 
 Uses the **App Router** (`app/` directory). All layouts and pages are Server Components by default — add `'use client'` only for components that need interactivity or browser APIs.
 
-- `app/layout.tsx` — root layout with Geist fonts, Tailwind CSS globals
-- `app/page.tsx` — home page (Server Component)
-- `app/globals.css` — global styles (Tailwind v4 via `@tailwindcss/postcss`)
-- `public/` — static assets served from `/`
-- `next.config.ts` — Next.js config (TypeScript)
+### Routes
+
+| Route | File | Description |
+|---|---|---|
+| `/` | `app/page.tsx` + `HomeClient.tsx` | Home — top scores, feature icons, scroll animations |
+| `/biblioteca` | `app/biblioteca/page.tsx` + `BibliotecaCatalog.tsx` | Game catalog with search and 3D card tilt |
+| `/detalle/[id]` | `app/detalle/[id]/page.tsx` | Game detail + per-game leaderboard |
+| `/player/[id]` | `app/player/[id]/page.tsx` | In-game HUD (score, level, lives, pause) |
+| `/auth` | `app/auth/page.tsx` | Login / signup tabs |
+| `/salon` | `app/salon/page.tsx` + `SalonTabs.tsx` | Hall of Fame — leaderboard tabs per game |
+| `/about` | `app/about/page.tsx` | About + contact form (Resend) |
+
+### Games (`app/games/`)
+
+Each game has its own folder: `page.tsx`, `<Name>Game.tsx` (client component), `game.ts` (pure logic).
+
+| Game | Route | Notes |
+|---|---|---|
+| Tetris | `/games/tetris` | Falling block puzzle |
+| Asteroids | `/games/asteroids` | Space shooter |
+| Snake | `/games/snake` | Grid-based snake; sprite atlas in `public/` |
+| Arkanoid | `/games/arkanoid` | Brick breaker; `levels.ts` + `spritesheet.ts` |
+| and more... see C:\Users\edgar\Dev\ClaudeCode\05-arcade-vault\references\implemented-games.md
+
+### Shared code
+
+- `app/_components/Nav.tsx` — global nav (logo, links, auth button, mobile hamburger)
+- `app/_context/AuthContext.tsx` — auth state via React Context + localStorage (`av_user` key)
+- `lib/data.ts` — `GAMES` array, player names, `seededScores()` for deterministic demo data
+- `lib/supabase/client.ts` — browser Supabase client (typed with `Database`)
+- `lib/supabase/server.ts` — server-side Supabase client
+- `types/database.ts` — auto-generated Supabase types
+- `app/about/actions.ts` — `sendContact()` Server Action (Resend email)
+
+### Supabase schema
+
+| Table | Key columns |
+|---|---|
+| `games` | `id`, `name`, `slug`, `description`, `route`, `image_url` |
+| `scores` | `id`, `player_name`, `score`, `game_slug` (→ `games.slug`), `created_at` |
+
+Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `RESEND_API_KEY`, `CONTACT_EMAIL`.
+
+### Styling
+
+- Tailwind CSS v4 via `@tailwindcss/postcss`; config in `app/globals.css`
+- Fonts: **Press Start 2P** (pixel), Courier Prime, JetBrains Mono (Google Fonts)
+- CSS custom properties: `--cyan`, `--magenta`, `--yellow`, `--green`, etc. for neon arcade palette
+
 
 ## Spec-Driven Development
 
@@ -48,3 +95,5 @@ This project follows Spec Driven Design using `/spec` and `/spec-impl` skills fr
 ```bash
 npx skills@latest add Klerith/fernando-skills
 ```
+
+Specs live in `specs/` (01–10 implemented so far). Each spec file maps to a branch and PR.
