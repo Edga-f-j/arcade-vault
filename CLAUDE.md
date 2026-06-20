@@ -97,3 +97,16 @@ npx skills@latest add Klerith/fernando-skills
 ```
 
 Specs live in `specs/` (01–10 implemented so far). Each spec file maps to a branch and PR.
+
+
+## Agents
+
+### `game-planner` (`.claude/Agents/game-planner.md`)
+
+Curates the game catalog. Reads `references/implemented-games.md` (implemented) and
+`references/game-suggestions-todo.md` (previously suggested) to avoid repeats, then
+proposes one new game with a full `add-game`-ready spec sheet and appends it to the
+To-Do file as persistent memory.
+
+**When to use:** before starting a new game, invoke this agent to get a justified
+recommendation and a ready-to-use ficha. Then run `/add-game <slug>` to generate the spec.
