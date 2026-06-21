@@ -18,6 +18,9 @@ implementar vía `/add-game`. Marcar `[x]` cuando se implemente.
       Mecánica/controles: Flechas ← → para mover la nave; Espacio para disparar. Los invasores se mueven en bloque de lado a lado, bajando un escalón al tocar el borde. Disparan aleatoriamente hacia abajo. 4 escudos destructibles absorben impactos.
       Canvas: 800x600 · HUD: score / lives / level · Fin: invasores llegan al suelo O el jugador pierde todas las vidas (múltiple)
       Propuesto: 2026-06-20 — Motivo de encaje: único SHOOTER con dinámica de oleadas en formación; llena el hueco de SHOOTER (solo Asteroids) con mecánica radicalmente distinta; magenta libre en esa categoría.
+      Diseñado: 2026-06-21 — game-jam · tema: Space Invaders
+      Variantes: specs/game-jam/space-invaders/variante-a-space-invaders.md (core)
+                 specs/game-jam/space-invaders/variante-b-space-invaders.md (enriquecida)
 
 - [ ] **Columns** — `columns` · PUZZLE · yellow
       Haz caer grupos de 3 gemas de colores y alinea 3 o más del mismo color (horizontal, vertical o diagonal) para eliminarlas antes de que la pila llegue arriba.
@@ -36,6 +39,9 @@ implementar vía `/add-game`. Marcar `[x]` cuando se implemente.
       Mecánica/controles: Flechas de dirección; los 4 fantasmas tienen IA distinta (persecución, emboscada, aleatoria, mixta). Power-pellet invierte roles por unos segundos.
       Canvas: 800x600 · HUD: score / lives / level · Fin: todos los puntos comidos O perder todas las vidas
       Propuesto: 2026-06-20 — Motivo de encaje: cubre género LABERINTO/CHASE completamente ausente del catálogo.
+      Diseñado: 2026-06-21 — game-jam · tema: laberinto/chase clásico
+      Variantes: specs/game-jam/pac-man/variante-a-pac-man.md (core)
+                 specs/game-jam/pac-man/variante-b-pac-man.md (enriquecida)
 
 - [ ] **1942** — `1942` · SHOOTER · green
       Pilota un biplano en un shooter vertical de scroll continuo, destruyendo oleadas de aviones enemigos y esquivando proyectiles.

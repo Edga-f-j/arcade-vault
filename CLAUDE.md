@@ -110,3 +110,17 @@ To-Do file as persistent memory.
 
 **When to use:** before starting a new game, invoke this agent to get a justified
 recommendation and a ready-to-use ficha. Then run `/add-game <slug>` to generate the spec.
+
+### `game-jam` (`.claude/Agents/game-jam.md`)
+
+Takes a **theme** (e.g. "deep ocean", "food", "retro horror") and designs **one** game that
+fits it, then generates a series of **incremental specs** (min 2, target 3) in
+`specs/game-jam/<slug>/` — `01-mvp-<slug>.md` plus enhancements, each chained via `Depends on`.
+Each spec follows the format of the approved specs (`07`/`08`/`09`) and the `add-game`
+invariants (pure `game.ts`, `startGame` contract, `scoreSaved` ref, `game_slug === slug`).
+Reads `references/implemented-games.md` and `references/game-suggestions-todo.md` to avoid
+repeats and appends the chosen game to the To-Do file as persistent memory. Writes specs only —
+never game code.
+
+**When to use:** to spin up a full incremental spec roadmap for a new themed game in one shot.
+Specs start as `Draft`; review them, then run `/spec-impl <ruta>` for each in order (MVP first).
