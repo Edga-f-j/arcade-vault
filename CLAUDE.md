@@ -124,3 +124,16 @@ never game code.
 
 **When to use:** to spin up a full incremental spec roadmap for a new themed game in one shot.
 Specs start as `Draft`; review them, then run `/spec-impl <ruta>` for each in order (MVP first).
+
+### `skin-designer` (`.claude/Agents/skin-designer.md`)
+
+Audits every game in `app/games/**` to ensure it offers at least 3 skins — `classic`
+(default), `neon`, and `retro` — and designs the specs to configure them. Each skin must
+read well on the dark background (`--bg #0a0a0f`); there is no light theme. Reuses the
+`globals.css` palette tokens and the per-game accent color from
+`references/implemented-games.md`. Keeps the `add-game` invariants (pure `game.ts`, no
+hardcoded palettes in the logic, `startGame` contract). Writes specs only — never game code.
+
+**When to use:** to audit skin coverage and generate the spec(s) for a shared skin system
+plus per-game palettes. Returns an audit report (game → skins present/missing/contrast risk);
+specs start as `Draft`, then run `/spec-impl <NN>-<slug>` for each.
