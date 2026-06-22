@@ -108,8 +108,8 @@ export default function TetrisGame() {
 
       {/* ── CRT + canvas + preview ───────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center' }}>
-        <div className="crt">
-          <div className="crt-screen" style={{ width: 300, height: 600 }}>
+        <div className="crt" style={{ maxWidth: 300, width: '100%' }}>
+          <div className="crt-screen" style={{ aspectRatio: '1/2' }}>
             { !gameStarted && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.85)', zIndex: 10 }}>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
@@ -145,7 +145,7 @@ export default function TetrisGame() {
               ref={ canvasRef }
               width={ 300 }
               height={ 600 }
-              style={{ display: 'block' }}
+              style={{ display: 'block', width: '100%', height: '100%' }}
             />
             { paused && !gameOver && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.65)', zIndex: 5 }}>

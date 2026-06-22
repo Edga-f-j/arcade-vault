@@ -152,8 +152,8 @@ export default function SnakeGame() {
       </div>
 
       {/* CRT + canvas */}
-      <div className="crt" style={{ width: 'fit-content', margin: '0 auto' }}>
-        <div className="crt-screen" style={{ width: 600, height: 600 }}>
+      <div className="crt" style={{ maxWidth: 600, width: '100%', margin: '0 auto' }}>
+        <div className="crt-screen" style={{ aspectRatio: '1/1' }}>
 
           {/* Modal nombre */}
           {!gameStarted && (
@@ -210,7 +210,7 @@ export default function SnakeGame() {
             </div>
           )}
 
-          <canvas ref={canvasRef} width={600} height={600} style={{ display: 'block' }} />
+          <canvas ref={canvasRef} width={600} height={600} style={{ display: 'block', width: '100%', height: '100%' }} />
         </div>
         <TouchGamepad
           onInput={(b, p) => sendInputRef.current?.(b, p)}

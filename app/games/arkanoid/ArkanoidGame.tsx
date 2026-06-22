@@ -149,8 +149,8 @@ export default function ArkanoidGame() {
       </div>
 
       {/* CRT + canvas */}
-      <div className="crt">
-        <div className="crt-screen" style={{ width: 800, height: 600 }}>
+      <div className="crt" style={{ maxWidth: 800, width: '100%' }}>
+        <div className="crt-screen">
 
           {/* Modal nombre */}
           {!gameStarted && (
@@ -219,7 +219,7 @@ export default function ArkanoidGame() {
             </div>
           )}
 
-          <canvas ref={canvasRef} width={800} height={600} style={{ display: 'block' }} />
+          <canvas ref={canvasRef} width={800} height={600} style={{ display: 'block', width: '100%', height: '100%' }} />
         </div>
         <TouchGamepad
           onInput={(b, p) => sendInputRef.current?.(b, p)}
