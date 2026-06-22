@@ -107,8 +107,8 @@ export default function TetrisGame() {
       </div>
 
       {/* ── CRT + canvas + preview ───────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center' }}>
-        <div className="crt" style={{ maxWidth: 420, width: '100%', flex: 1 }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="crt" style={{ maxWidth: 420, width: '100%', flex: '1 1 280px' }}>
           <div className="crt-screen" style={{ aspectRatio: '1/2' }}>
             { !gameStarted && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.85)', zIndex: 10 }}>

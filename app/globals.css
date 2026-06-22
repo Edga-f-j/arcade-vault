@@ -1270,7 +1270,7 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   padding-top: 4px;
 }
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .tetris-preview { display: none; }
 }
 
