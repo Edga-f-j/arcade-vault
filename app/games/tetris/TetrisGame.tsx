@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { startGame } from './game';
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 export default function TetrisGame() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const nextCanvasRef = useRef<HTMLCanvasElement>( null );
-  const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
+  const setPausedRef  = useRef<( ( p: boolean ) => void ) | null>( null );
+  const sendInputRef  = useRef<( ( b: GamepadButton, p: boolean ) => void ) | null>( null );
   const scoreSaved = useRef( false );
 
   const [ score, setScore ] = useState( 0 );
@@ -27,7 +29,7 @@ export default function TetrisGame() {
 
   useEffect( () => {
     if ( !gameStarted || !canvasRef.current || !nextCanvasRef.current ) return;
-    const { cleanup, setPaused: gamePause } = startGame(
+    const { cleanup, setPaused: gamePause, sendInput } = startGame(
       canvasRef.current,
       nextCanvasRef.current,
       ( state ) => {
@@ -41,6 +43,7 @@ export default function TetrisGame() {
       }
     );
     setPausedRef.current = gamePause;
+    sendInputRef.current = sendInput;
     return cleanup;
   }, [ gameStarted ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -167,6 +170,10 @@ export default function TetrisGame() {
               </div>
             ) }
           </div>
+          <TouchGamepad
+            onInput={ (b, p) => sendInputRef.current?.( b, p ) }
+            mapping={{ used: ['up','down','left','right','a'], labels: { a: 'DROP' } }}
+          />
           <div className="crt-bottom">
             <span className="led">SEÑAL OK</span>
             <span>TETRIS · CRT-83 · 60 HZ</span>

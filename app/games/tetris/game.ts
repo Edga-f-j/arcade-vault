@@ -68,11 +68,13 @@ function randomPiece() {
   return { key, shape: SHAPES[key].map((r) => [...r]) }
 }
 
+type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
+
 export function startGame(
   canvas: HTMLCanvasElement,
   nextCanvas: HTMLCanvasElement,
   onStateChange?: (state: GameState) => void
-): { cleanup: () => void; setPaused: (p: boolean) => void } {
+): { cleanup: () => void; setPaused: (p: boolean) => void; sendInput: (button: GamepadButton, pressed: boolean) => void } {
   const ctx = canvas.getContext('2d')!
   const nextCtx = nextCanvas.getContext('2d')!
 
@@ -284,57 +286,76 @@ export function startGame(
     drawNext()
   }
 
+  function actionLeft() {
+    if (!collides(current.shape, pos.x - 1, pos.y)) pos.x--
+    drawBoard()
+  }
+
+  function actionRight() {
+    if (!collides(current.shape, pos.x + 1, pos.y)) pos.x++
+    drawBoard()
+  }
+
+  function actionSoftDrop() {
+    if (!collides(current.shape, pos.x, pos.y + 1)) {
+      pos.y++
+      score += 1
+      notifyState()
+    } else {
+      place()
+    }
+    drawBoard()
+  }
+
+  function actionRotate() {
+    const rotated = rotate(current.shape as number[][])
+    if (!collides(rotated, pos.x, pos.y)) {
+      current.shape = rotated
+    } else if (!collides(rotated, pos.x + 1, pos.y)) {
+      current.shape = rotated
+      pos.x++
+    } else if (!collides(rotated, pos.x - 1, pos.y)) {
+      current.shape = rotated
+      pos.x--
+    }
+    drawBoard()
+  }
+
+  function actionHardDrop() {
+    let dropped = 0
+    while (!collides(current.shape, pos.x, pos.y + 1)) {
+      pos.y++
+      dropped++
+    }
+    score += dropped * 2
+    notifyState()
+    place()
+    drawBoard()
+  }
+
   function onKeyDown(e: KeyboardEvent) {
     if (isOver || isPaused) return
 
     switch (e.code) {
-      case 'ArrowLeft':
-        if (!collides(current.shape, pos.x - 1, pos.y)) pos.x--
-        drawBoard()
-        break
-      case 'ArrowRight':
-        if (!collides(current.shape, pos.x + 1, pos.y)) pos.x++
-        drawBoard()
-        break
-      case 'ArrowDown':
-        if (!collides(current.shape, pos.x, pos.y + 1)) {
-          pos.y++
-          score += 1
-          notifyState()
-        } else {
-          place()
-        }
-        drawBoard()
-        break
+      case 'ArrowLeft':  actionLeft();     break
+      case 'ArrowRight': actionRight();    break
+      case 'ArrowDown':  actionSoftDrop(); break
       case 'ArrowUp':
-      case 'KeyX': {
-        const rotated = rotate(current.shape as number[][])
-        if (!collides(rotated, pos.x, pos.y)) {
-          current.shape = rotated
-        } else if (!collides(rotated, pos.x + 1, pos.y)) {
-          current.shape = rotated
-          pos.x++
-        } else if (!collides(rotated, pos.x - 1, pos.y)) {
-          current.shape = rotated
-          pos.x--
-        }
-        drawBoard()
-        break
-      }
-      case 'Space': {
+      case 'KeyX':       actionRotate();   break
+      case 'Space':
         e.preventDefault()
-        let dropped = 0
-        while (!collides(current.shape, pos.x, pos.y + 1)) {
-          pos.y++
-          dropped++
-        }
-        score += dropped * 2
-        notifyState()
-        place()
-        drawBoard()
+        actionHardDrop()
         break
-      }
     }
+  }
+
+  function sendInput(button: GamepadButton, pressed: boolean) {
+    if (!pressed || isOver || isPaused) return
+    if (button === 'left')  actionLeft()
+    if (button === 'right') actionRight()
+    if (button === 'down')  actionSoftDrop()
+    if (button === 'up')    actionRotate()
+    if (button === 'a')     actionHardDrop()
   }
 
   window.addEventListener('keydown', onKeyDown)
@@ -353,5 +374,5 @@ export function startGame(
     }
   }
 
-  return { cleanup, setPaused }
+  return { cleanup, setPaused, sendInput }
 }
