@@ -144,56 +144,58 @@ export default function FroggerGame({
 
       // Carriles de carretera (filas 8–12)
       const roadConfigs: { row: number; speed: number; dir: 1 | -1 }[] = [
-        { row: 12, speed: 1.8, dir:  1 },
-        { row: 11, speed: 2.5, dir: -1 },
-        { row: 10, speed: 2.0, dir:  1 },
-        { row:  9, speed: 3.0, dir: -1 },
-        { row:  8, speed: 3.5, dir:  1 },
+        { row: 12, speed: 0.05, dir:  1 },
+        { row: 11, speed: 0.05, dir: -1 },
+        { row: 10, speed: 0.05, dir:  1 },
+        { row:  9, speed: 0.05, dir: -1 },
+        { row:  8, speed: 0.05, dir:  1 },
       ];
 
       for (const cfg of roadConfigs) {
         const entities: Entity[] = [];
-        let col = 0;
-        while (col < COLS) {
+        let col = Math.floor(Math.random() * COLS); // offset aleatorio por carril
+        while (col < Math.floor(Math.random() * COLS) + COLS * 2) {
           const type: 'car' | 'truck' = Math.random() < 0.6 ? 'car' : 'truck';
           const width = type === 'car' ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 2);
-          entities.push({ col, width, type });
-          col += width + 2 + Math.floor(Math.random() * 3);
+          if (col < COLS) entities.push({ col, width, type });
+          col += width + 3 + Math.floor(Math.random() * 4); // mínimo 3 celdas de hueco
         }
         result.push({ row: cfg.row, speed: cfg.speed * speedScale, dir: cfg.dir, entities });
       }
 
       // Carriles de río (filas 1–6)
       const riverConfigs: { row: number; speed: number; dir: 1 | -1; type: 'log' | 'turtle' }[] = [
-        { row: 6, speed: 1.2, dir:  1, type: 'log'    },
-        { row: 5, speed: 1.8, dir: -1, type: 'turtle' },
-        { row: 4, speed: 2.2, dir:  1, type: 'log'    },
-        { row: 3, speed: 1.5, dir: -1, type: 'turtle' },
-        { row: 2, speed: 2.8, dir:  1, type: 'log'    },
-        { row: 1, speed: 2.0, dir: -1, type: 'turtle' },
+        { row: 6, speed: 0.05, dir:  1, type: 'log'    },
+        { row: 5, speed: 0.05, dir: -1, type: 'turtle' },
+        { row: 4, speed: 0.05, dir:  1, type: 'log'    },
+        { row: 3, speed: 0.05, dir: -1, type: 'turtle' },
+        { row: 2, speed: 0.05, dir:  1, type: 'log'    },
+        { row: 1, speed: 0.05, dir: -1, type: 'turtle' },
       ];
 
       for (const cfg of riverConfigs) {
         const entities: Entity[] = [];
-        let col = 0;
-        while (col < COLS) {
+        let col = Math.floor(Math.random() * COLS); // offset aleatorio por carril
+        while (col < Math.floor(Math.random() * COLS) + COLS * 2) {
           if (cfg.type === 'log') {
             const width = 2 + Math.floor(Math.random() * 3);
-            entities.push({ col, width, type: 'log' });
-            col += width + 2 + Math.floor(Math.random() * 2);
+            if (col < COLS) entities.push({ col, width, type: 'log' });
+            col += width + 3 + Math.floor(Math.random() * 3);
           } else {
             const groupSize = 2 + Math.floor(Math.random() * 2);
-            for (let i = 0; i < groupSize; i++) {
-              entities.push({
-                col: col + i,
-                width: 1,
-                type: 'turtle',
-                submerged: false,
-                submergeTimer: 3000 + Math.random() * 1000,
-                submergePhase: 'visible',
-              });
+            if (col < COLS) {
+              for (let i = 0; i < groupSize; i++) {
+                entities.push({
+                  col: col + i,
+                  width: 1,
+                  type: 'turtle',
+                  submerged: false,
+                  submergeTimer: 3000 + Math.random() * 1000,
+                  submergePhase: 'visible',
+                });
+              }
             }
-            col += groupSize + 2 + Math.floor(Math.random() * 2);
+            col += groupSize + 3 + Math.floor(Math.random() * 3);
           }
         }
         result.push({ row: cfg.row, speed: cfg.speed * speedScale, dir: cfg.dir, entities });
@@ -245,13 +247,21 @@ export default function FroggerGame({
           resolveCell();
         }
       } else {
-        // Mover con la plataforma en el río
+        // Mover con la plataforma en el río / detectar muerte continua
         if (frog.row >= ROW_RIVER_TOP && frog.row <= ROW_RIVER_BOT) {
           const support = getSupport(frog);
           if (support) {
             const lane = lanes.find(l => l.row === frog.row)!;
             frog.col += lane.speed * lane.dir * dt / 16;
+          } else {
+            killFrog();
+            return;
           }
+        }
+
+        // Detección continua de colisión en carretera
+        if (frog.row >= ROW_ROAD_TOP && frog.row <= ROW_ROAD_BOT) {
+          if (checkRoadCollision()) { killFrog(); return; }
         }
 
         // Procesar input
