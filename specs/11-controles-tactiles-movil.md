@@ -1,6 +1,6 @@
 # SPEC 11 — Controles táctiles para móvil
 
-> **Status:** Aprobado · **Depends on:** 05-juego-asteroids, 07-juego-tetris, 08-arkanoid, 09-juego-snake · **Date:** 2026-06-21
+> **Status:** Implementado · **Depends on:** 05-juego-asteroids, 07-juego-tetris, 08-arkanoid, 09-juego-snake · **Date:** 2026-06-21
 > **Objective:** Añadir un gamepad virtual unificado (D-pad + botones A/B) que aparece automáticamente en pantallas táctiles y permite jugar los 4 juegos en móvil, mapeando cada acción al mismo esquema de botones vía una nueva API `sendInput` del motor.
 
 ---
