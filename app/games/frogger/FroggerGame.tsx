@@ -472,26 +472,21 @@ export default function FroggerGame({
       }
       c.setLineDash([]);
 
-      // Bocas destino
+      // Bocas destino — solo se dibuja cuando están ocupadas
       const goalCols = [1, 4, 7, 10, 13];
       for (let i = 0; i < 5; i++) {
+        if (!goals[i]) continue;
         const gc = goalCols[i];
         const x = gc * CELL;
         const y = ROW_GOALS * CELL;
-        c.fillStyle = goals[i] ? s.goalFilled : s.goalBg;
+        c.fillStyle = s.goalFilled;
         c.fillRect(x, y, CELL * 2, CELL);
-
-        // Borde de boca destino
         if (s.shadowBlur > 0) {
           c.shadowBlur = s.shadowBlur;
           c.shadowColor = s.shadowColor;
         }
-        c.strokeStyle = s.goalBorder;
-        c.lineWidth = 2;
-        c.strokeRect(x + 1, y + 1, CELL * 2 - 2, CELL - 2);
+        drawFrogIcon(c, x + CELL, y + CELL / 2, s.frogColor, 10);
         c.shadowBlur = 0;
-
-        if (goals[i]) drawFrogIcon(c, x + CELL, y + CELL / 2, s.frogColor, 10);
       }
 
       // Entidades
