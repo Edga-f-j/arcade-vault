@@ -63,11 +63,17 @@ export default function FroggerGame({
   onGameOver,
 }: FroggerGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pausedRef = useRef(paused);
+  const pausedRef        = useRef(paused);
+  const onScoreRef       = useRef(onScoreChange);
+  const onLivesRef       = useRef(onLivesChange);
+  const onLevelRef       = useRef(onLevelChange);
+  const onGameOverRef    = useRef(onGameOver);
 
-  useEffect(() => {
-    pausedRef.current = paused;
-  }, [paused]);
+  useEffect(() => { pausedRef.current     = paused;         }, [paused]);
+  useEffect(() => { onScoreRef.current    = onScoreChange;  }, [onScoreChange]);
+  useEffect(() => { onLivesRef.current    = onLivesChange;  }, [onLivesChange]);
+  useEffect(() => { onLevelRef.current    = onLevelChange;  }, [onLevelChange]);
+  useEffect(() => { onGameOverRef.current = onGameOver;     }, [onGameOver]);
 
   const startLoop = useCallback(() => {
     const canvas = canvasRef.current;
@@ -80,7 +86,7 @@ export default function FroggerGame({
     let score = 0;
     let level = 1;
     let gameOver = false;
-    let roundTimer = 15;
+    let roundTimer = 25;
     let goals: boolean[] = Array(5).fill(false);
     let pendingDir: Direction | null = null;
     let rafId = 0;
@@ -142,7 +148,6 @@ export default function FroggerGame({
       const speedScale = Math.pow(1.15, lvl - 1);
       const result: Lane[] = [];
 
-      // Carriles de carretera (filas 8–12)
       const roadConfigs: { row: number; speed: number; dir: 1 | -1 }[] = [
         { row: 12, speed: 0.05, dir:  1 },
         { row: 11, speed: 0.05, dir: -1 },
@@ -153,17 +158,20 @@ export default function FroggerGame({
 
       for (const cfg of roadConfigs) {
         const entities: Entity[] = [];
-        let col = Math.floor(Math.random() * COLS); // offset aleatorio por carril
-        while (col < Math.floor(Math.random() * COLS) + COLS * 2) {
+        // Dividir el carril en N slots iguales; poner un vehículo en cada slot
+        // garantiza huecos navegables entre slots
+        const num = 2 + Math.floor(Math.random() * 2); // 2-3 vehículos
+        const slot = Math.floor(COLS / num);
+        for (let i = 0; i < num; i++) {
           const type: 'car' | 'truck' = Math.random() < 0.6 ? 'car' : 'truck';
           const width = type === 'car' ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 2);
-          if (col < COLS) entities.push({ col, width, type });
-          col += width + 3 + Math.floor(Math.random() * 4); // mínimo 3 celdas de hueco
+          const maxOff = Math.max(0, slot - width - 2);
+          const col = i * slot + Math.floor(Math.random() * (maxOff + 1));
+          entities.push({ col, width, type });
         }
         result.push({ row: cfg.row, speed: cfg.speed * speedScale, dir: cfg.dir, entities });
       }
 
-      // Carriles de río (filas 1–6)
       const riverConfigs: { row: number; speed: number; dir: 1 | -1; type: 'log' | 'turtle' }[] = [
         { row: 6, speed: 0.05, dir:  1, type: 'log'    },
         { row: 5, speed: 0.05, dir: -1, type: 'turtle' },
@@ -175,27 +183,28 @@ export default function FroggerGame({
 
       for (const cfg of riverConfigs) {
         const entities: Entity[] = [];
-        let col = Math.floor(Math.random() * COLS); // offset aleatorio por carril
-        while (col < Math.floor(Math.random() * COLS) + COLS * 2) {
+        const num = 2 + Math.floor(Math.random() * 2); // 2-3 plataformas
+        const slot = Math.floor(COLS / num);
+        for (let i = 0; i < num; i++) {
           if (cfg.type === 'log') {
             const width = 2 + Math.floor(Math.random() * 3);
-            if (col < COLS) entities.push({ col, width, type: 'log' });
-            col += width + 3 + Math.floor(Math.random() * 3);
+            const maxOff = Math.max(0, slot - width);
+            const col = i * slot + Math.floor(Math.random() * (maxOff + 1));
+            entities.push({ col, width, type: 'log' });
           } else {
             const groupSize = 2 + Math.floor(Math.random() * 2);
-            if (col < COLS) {
-              for (let i = 0; i < groupSize; i++) {
-                entities.push({
-                  col: col + i,
-                  width: 1,
-                  type: 'turtle',
-                  submerged: false,
-                  submergeTimer: 3000 + Math.random() * 1000,
-                  submergePhase: 'visible',
-                });
-              }
+            const maxOff = Math.max(0, slot - groupSize);
+            const col = i * slot + Math.floor(Math.random() * (maxOff + 1));
+            for (let j = 0; j < groupSize; j++) {
+              entities.push({
+                col: col + j,
+                width: 1,
+                type: 'turtle',
+                submerged: false,
+                submergeTimer: 3000 + Math.random() * 1000,
+                submergePhase: 'visible',
+              });
             }
-            col += groupSize + 3 + Math.floor(Math.random() * 3);
           }
         }
         result.push({ row: cfg.row, speed: cfg.speed * speedScale, dir: cfg.dir, entities });
@@ -317,10 +326,11 @@ export default function FroggerGame({
     function getSupport(f: Frog): Entity | null {
       const lane = lanes.find(l => l.row === f.row);
       if (!lane) return null;
+      const center = f.col + 0.5; // centro de la rana
       for (const e of lane.entities) {
         if (e.type !== 'log' && e.type !== 'turtle') continue;
         if (e.type === 'turtle' && e.submerged) continue;
-        if (f.col >= e.col && f.col < e.col + e.width) return e;
+        if (center >= e.col && center < e.col + e.width) return e;
       }
       return null;
     }
@@ -328,9 +338,12 @@ export default function FroggerGame({
     function checkRoadCollision(): boolean {
       const lane = lanes.find(l => l.row === frog.row);
       if (!lane) return false;
+      // Hitbox reducido: solo el 70% central del cell de la rana
+      const frogLeft  = frog.col + 0.15;
+      const frogRight = frog.col + 0.85;
       for (const e of lane.entities) {
         if (e.type !== 'car' && e.type !== 'truck') continue;
-        if (frog.col >= e.col && frog.col < e.col + e.width) return true;
+        if (frogLeft < e.col + e.width && frogRight > e.col) return true;
       }
       return false;
     }
@@ -361,23 +374,23 @@ export default function FroggerGame({
     function completeRound() {
       addScore(200);
       level++;
-      onLevelChange(level);
+      onLevelRef.current(level);
       goals = Array(5).fill(false);
       lanes = buildLanes(level);
-      roundTimer = Math.max(10, 15 - (level - 1) * 0.5);
+      roundTimer = Math.max(15, 25 - (level - 1) * 1);
       resetFrogPosition();
     }
 
     function killFrog() {
       lives--;
-      onLivesChange(lives);
+      onLivesRef.current(lives);
       if (lives <= 0) {
         gameOver = true;
-        onLivesChange(0);
-        onGameOver(score);
+        onLivesRef.current(0);
+        onGameOverRef.current(score);
         return;
       }
-      roundTimer = Math.max(10, 15 - (level - 1) * 0.5);
+      roundTimer = Math.max(15, 25 - (level - 1) * 1);
       resetFrogPosition();
     }
 
@@ -393,7 +406,7 @@ export default function FroggerGame({
 
     function addScore(pts: number) {
       score += pts;
-      onScoreChange(score);
+      onScoreRef.current(score);
     }
 
     // ────────────────────────────────────────────────────────────────────
@@ -557,17 +570,21 @@ export default function FroggerGame({
         drawFrogIcon(c, CANVAS_W - 16 - i * 22, 16, '#4ade80', 8);
       }
 
-      // Barra de tiempo en fila 0 (debajo del HUD)
-      const timerMax = Math.max(10, 15 - (level - 1) * 0.5);
+      // Barra de tiempo — fila inferior, 10px de alto para que sea visible
+      const timerMax = Math.max(15, 25 - (level - 1) * 1);
       const ratio = Math.max(0, roundTimer / timerMax);
       const barColor = ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#eab308' : '#ef4444';
-      c.fillStyle = '#222';
-      c.fillRect(0, CANVAS_H - 6, CANVAS_W, 6);
+      c.fillStyle = '#111';
+      c.fillRect(0, CANVAS_H - 10, CANVAS_W, 10);
       c.fillStyle = barColor;
-      c.fillRect(0, CANVAS_H - 6, CANVAS_W * ratio, 6);
+      c.fillRect(0, CANVAS_H - 10, CANVAS_W * ratio, 10);
+      c.fillStyle = 'rgba(255,255,255,0.5)';
+      c.font = '9px monospace';
+      c.textAlign = 'right';
+      c.fillText(`${Math.ceil(roundTimer)}s`, CANVAS_W - 4, CANVAS_H - 2);
     }
 
-  }, [onScoreChange, onLivesChange, onLevelChange, onGameOver]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const cleanup = startLoop();
