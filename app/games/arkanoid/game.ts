@@ -20,11 +20,13 @@ const BLOCKS_ORIGIN_Y = 80
 const BASE_BALL_VX   = 200
 const BASE_BALL_VY   = -300
 
+type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
+
 export function startGame(
   canvas: HTMLCanvasElement,
   skinRef: { current: Skin },
   onStateChange?: (state: GameState) => void
-): { cleanup: () => void; setPaused: (p: boolean) => void } {
+): { cleanup: () => void; setPaused: (p: boolean) => void; sendInput: (button: GamepadButton, pressed: boolean) => void } {
   const ctx = canvas.getContext('2d')!
 
   const bounceSound = new Audio('/games/arkanoid/sounds/ball-bounce.mp3')
@@ -333,5 +335,10 @@ export function startGame(
 
   function setPaused(p: boolean) { isPaused = p }
 
-  return { cleanup, setPaused }
+  function sendInput(button: GamepadButton, pressed: boolean) {
+    if (button === 'left')  keys.ArrowLeft  = pressed
+    if (button === 'right') keys.ArrowRight = pressed
+  }
+
+  return { cleanup, setPaused, sendInput }
 }
