@@ -97,3 +97,43 @@ npx skills@latest add Klerith/fernando-skills
 ```
 
 Specs live in `specs/` (01–10 implemented so far). Each spec file maps to a branch and PR.
+
+
+## Agents
+
+### `game-planner` (`.claude/Agents/game-planner.md`)
+
+Curates the game catalog. Reads `references/implemented-games.md` (implemented) and
+`references/game-suggestions-todo.md` (previously suggested) to avoid repeats, then
+proposes one new game with a full `add-game`-ready spec sheet and appends it to the
+To-Do file as persistent memory.
+
+**When to use:** before starting a new game, invoke this agent to get a justified
+recommendation and a ready-to-use ficha. Then run `/add-game <slug>` to generate the spec.
+
+### `game-jam` (`.claude/Agents/game-jam.md`)
+
+Takes a **theme** (e.g. "deep ocean", "food", "retro horror") and designs **one** game that
+fits it, then generates a series of **incremental specs** (min 2, target 3) in
+`specs/game-jam/<slug>/` — `01-mvp-<slug>.md` plus enhancements, each chained via `Depends on`.
+Each spec follows the format of the approved specs (`07`/`08`/`09`) and the `add-game`
+invariants (pure `game.ts`, `startGame` contract, `scoreSaved` ref, `game_slug === slug`).
+Reads `references/implemented-games.md` and `references/game-suggestions-todo.md` to avoid
+repeats and appends the chosen game to the To-Do file as persistent memory. Writes specs only —
+never game code.
+
+**When to use:** to spin up a full incremental spec roadmap for a new themed game in one shot.
+Specs start as `Draft`; review them, then run `/spec-impl <ruta>` for each in order (MVP first).
+
+### `skin-designer` (`.claude/Agents/skin-designer.md`)
+
+Audits every game in `app/games/**` to ensure it offers at least 3 skins — `classic`
+(default), `neon`, and `retro` — and designs the specs to configure them. Each skin must
+read well on the dark background (`--bg #0a0a0f`); there is no light theme. Reuses the
+`globals.css` palette tokens and the per-game accent color from
+`references/implemented-games.md`. Keeps the `add-game` invariants (pure `game.ts`, no
+hardcoded palettes in the logic, `startGame` contract). Writes specs only — never game code.
+
+**When to use:** to audit skin coverage and generate the spec(s) for a shared skin system
+plus per-game palettes. Returns an audit report (game → skins present/missing/contrast risk);
+specs start as `Draft`, then run `/spec-impl <NN>-<slug>` for each.

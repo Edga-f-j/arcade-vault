@@ -1,5 +1,6 @@
 import { loadSpritesheet, drawSprite, drawFrame, EXPLOSION_FRAMES, EXPLOSION_DURATION } from './spritesheet'
 import { LEVELS } from './levels'
+import type { Skin } from './skins'
 
 type GameStatus = 'playing' | 'gameover' | 'win'
 
@@ -21,6 +22,7 @@ const BASE_BALL_VY   = -300
 
 export function startGame(
   canvas: HTMLCanvasElement,
+  skinRef: { current: Skin },
   onStateChange?: (state: GameState) => void
 ): { cleanup: () => void; setPaused: (p: boolean) => void } {
   const ctx = canvas.getContext('2d')!
@@ -165,34 +167,116 @@ export function startGame(
   }
 
   function draw() {
-    ctx.fillStyle = '#000'
+    const skin = skinRef.current
+
+    // --- fondo ---
+    ctx.fillStyle = skin.boardBg || '#000000'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // --- bloques ---
     for (const block of blocks) {
-      if (block.alive) drawSprite(ctx, 'block_' + block.color, block.x, block.y, block.w, block.h)
+      if (!block.alive) continue
+
+      if (skin.renderMode === 'sprite') {
+        drawSprite(ctx, 'block_' + block.color, block.x, block.y, block.w, block.h)
+      } else if (skin.renderMode === 'flat') {
+        const hex = skin.blockColors[block.color] ?? '#888888'
+        ctx.fillStyle = hex
+        ctx.fillRect(block.x, block.y, block.w, block.h)
+        // highlight CRT (retro): franja blanca semitransparente de 4 px en borde superior
+        ctx.fillStyle = 'rgba(255,255,255,0.15)'
+        ctx.fillRect(block.x, block.y, block.w, 4)
+      } else {
+        // neon
+        const hex = skin.blockColors[block.color] ?? '#00f5ff'
+        ctx.shadowBlur  = skin.shadowBlur
+        ctx.shadowColor = hex
+        ctx.fillStyle   = hex + '33'  // fill semitransparente
+        ctx.fillRect(block.x, block.y, block.w, block.h)
+        ctx.shadowBlur  = 0
+        ctx.strokeStyle = hex
+        ctx.lineWidth   = 1.5
+        ctx.strokeRect(block.x + 0.75, block.y + 0.75, block.w - 1.5, block.h - 1.5)
+      }
     }
 
+    // --- explosiones ---
     for (const exp of explosions) {
       const frameIndex = Math.min(Math.floor(exp.elapsed / EXPLOSION_DURATION * 4), 3)
-      drawFrame(ctx, EXPLOSION_FRAMES[exp.color][frameIndex], exp.x, exp.y, exp.w, exp.h)
+      if (skin.renderMode === 'sprite') {
+        drawFrame(ctx, EXPLOSION_FRAMES[exp.color][frameIndex], exp.x, exp.y, exp.w, exp.h)
+      } else {
+        // explosión simplificada para flat/neon: destello de opacidad decreciente
+        const alpha = 1 - exp.elapsed / EXPLOSION_DURATION
+        const hex   = skin.blockColors[exp.color] ?? '#ffffff'
+        ctx.fillStyle = hex + Math.floor(alpha * 200).toString(16).padStart(2, '0')
+        ctx.fillRect(exp.x, exp.y, exp.w, exp.h)
+      }
     }
 
-    drawSprite(ctx, 'paddle', paddle.x, paddle.y, paddle.w, paddle.h)
-    drawSprite(ctx, 'ball',   ball.x,   ball.y,   ball.w,   ball.h)
+    // --- paleta ---
+    if (skin.renderMode === 'sprite') {
+      drawSprite(ctx, 'paddle', paddle.x, paddle.y, paddle.w, paddle.h)
+    } else if (skin.renderMode === 'flat') {
+      ctx.fillStyle = skin.paddleColor
+      ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h)
+      ctx.fillStyle = 'rgba(255,255,255,0.15)'
+      ctx.fillRect(paddle.x, paddle.y, paddle.w, 4)
+    } else {
+      // neon
+      ctx.shadowBlur  = skin.shadowBlur
+      ctx.shadowColor = skin.paddleColor
+      ctx.fillStyle   = skin.paddleColor + '55'
+      ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h)
+      ctx.shadowBlur  = 0
+      ctx.strokeStyle = skin.paddleColor
+      ctx.lineWidth   = 1.5
+      ctx.strokeRect(paddle.x + 0.75, paddle.y + 0.75, paddle.w - 1.5, paddle.h - 1.5)
+    }
 
+    // --- bola ---
+    if (skin.renderMode === 'sprite') {
+      drawSprite(ctx, 'ball', ball.x, ball.y, ball.w, ball.h)
+    } else if (skin.renderMode === 'flat') {
+      ctx.fillStyle = skin.ballColor
+      ctx.beginPath()
+      ctx.arc(ball.x + ball.w / 2, ball.y + ball.h / 2, ball.w / 2, 0, Math.PI * 2)
+      ctx.fill()
+    } else {
+      // neon
+      ctx.shadowBlur  = skin.shadowBlur
+      ctx.shadowColor = skin.ballColor
+      ctx.fillStyle   = skin.ballColor
+      ctx.beginPath()
+      ctx.arc(ball.x + ball.w / 2, ball.y + ball.h / 2, ball.w / 2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.shadowBlur  = 0
+    }
+
+    // --- HUD interno ---
     if (gameStatus === 'playing') {
-      ctx.fillStyle    = '#fff'
+      ctx.shadowBlur   = 0
+      ctx.fillStyle    = skin.textColor
       ctx.font         = 'bold 18px monospace'
       ctx.textAlign    = 'left'
       ctx.textBaseline = 'top'
       ctx.fillText('Score: ' + score, 10, 10)
       ctx.textAlign = 'center'
       ctx.fillText('Nivel: ' + currentLevel, canvas.width / 2, 10)
+
+      // vidas: icono de bola o punto según skin
       const ballSize    = 16
       const ballSpacing = 4
       for (let i = 0; i < lives; i++) {
         const bx = canvas.width - 10 - (lives - i) * (ballSize + ballSpacing)
-        drawSprite(ctx, 'ball', bx, 10, ballSize, ballSize)
+        if (skin.renderMode === 'sprite') {
+          drawSprite(ctx, 'ball', bx, 10, ballSize, ballSize)
+        } else {
+          ctx.fillStyle = skin.ballColor || skin.textColor
+          ctx.beginPath()
+          ctx.arc(bx + ballSize / 2, 10 + ballSize / 2, ballSize / 2, 0, Math.PI * 2)
+          ctx.fill()
+        }
       }
     }
   }

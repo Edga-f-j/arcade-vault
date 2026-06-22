@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { startGame } from './game'
+import { SKINS, type Skin } from './skins'
 
 export default function ArkanoidGame() {
   const router = useRouter()
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const setPausedRef = useRef<((p: boolean) => void) | null>(null)
   const scoreSaved   = useRef(false)
+  const skinRef = useRef<Skin>(SKINS.classic)
 
   const [score,       setScore]       = useState(0)
   const [lives,       setLives]       = useState(3)
@@ -19,6 +21,12 @@ export default function ArkanoidGame() {
   const [gameStarted, setGameStarted] = useState(false)
   const [gameOver,    setGameOver]    = useState(false)
   const [gameWon,     setGameWon]     = useState(false)
+  const [activeSkin,  setActiveSkin]  = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('av_skin_arkanoid') ?? 'classic'
+    }
+    return 'classic'
+  })
 
   useEffect(() => {
     const saved = localStorage.getItem('arcade_player_name')
@@ -26,8 +34,12 @@ export default function ArkanoidGame() {
   }, [])
 
   useEffect(() => {
+    skinRef.current = SKINS[activeSkin] ?? SKINS.classic
+  }, [activeSkin])
+
+  useEffect(() => {
     if (!gameStarted || !canvasRef.current) return
-    const { cleanup, setPaused: gamePause } = startGame(canvasRef.current, (state) => {
+    const { cleanup, setPaused: gamePause } = startGame(canvasRef.current, skinRef, (state) => {
       setScore(state.score)
       setLives(state.lives)
       setLevel(state.level)
@@ -73,6 +85,11 @@ export default function ArkanoidGame() {
     setPausedRef.current?.(next)
   }
 
+  const handleSkinChange = (key: string) => {
+    setActiveSkin(key)
+    localStorage.setItem('av_skin_arkanoid', key)
+  }
+
   return (
     <div className="av-player fade-in">
       {/* HUD externo */}
@@ -95,6 +112,31 @@ export default function ArkanoidGame() {
             <div className="v">{String(level).padStart(2, '0')}</div>
           </div>
         </div>
+
+        {/* Selector de skin */}
+        <div className="hud-skins" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {Object.keys(SKINS).map(k => (
+            <button
+              key={k}
+              className={`btn-skin${activeSkin === k ? ' active' : ''}`}
+              onClick={() => handleSkinChange(k)}
+              style={{
+                padding: '4px 10px',
+                fontSize: 11,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                background: activeSkin === k ? 'var(--yellow)' : 'transparent',
+                color: activeSkin === k ? '#000' : 'var(--ink-dim)',
+                border: `1px solid ${activeSkin === k ? 'var(--yellow)' : 'var(--ink-faint)'}`,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+
         <div className="hud-actions">
           <button className="btn yellow" onClick={togglePause} disabled={gameOver || gameWon}>
             {paused ? 'REANUDAR' : 'PAUSA'}

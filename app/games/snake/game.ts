@@ -1,3 +1,5 @@
+import { type Skin } from './skins'
+
 const FRUIT_ATLAS: { x: number; y: number; w: number; h: number }[] = [
   { x: 34, y: 136, w: 110, h: 160 },   // banana
   { x: 186, y: 136, w: 150, h: 160 },  // orange
@@ -52,6 +54,7 @@ function randInt(max: number) {
 
 export function startGame(
   canvas: HTMLCanvasElement,
+  skinRef: { current: Skin },
   onStateChange?: (state: GameState) => void,
   onPauseToggle?: (paused: boolean) => void
 ): { cleanup: () => void; setPaused: (p: boolean) => void } {
@@ -158,14 +161,15 @@ export function startGame(
   }
 
   function draw() {
+    const skin = skinRef.current
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // grid background
-    ctx.fillStyle = '#0a0a0a'
+    ctx.fillStyle = skin.boardBg
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // grid lines
-    ctx.strokeStyle = '#1a1a1a'
+    ctx.strokeStyle = skin.gridLineColor
     ctx.lineWidth = 0.5
     for (let i = 0; i <= COLS; i++) {
       ctx.beginPath()
@@ -181,13 +185,13 @@ export function startGame(
     }
 
     // snake body
-    ctx.fillStyle = '#4ade80'
+    ctx.fillStyle = skin.snakeBodyColor
     for (let i = 1; i < snake.length; i++) {
       ctx.fillRect(snake[i].x * CELL + 1, snake[i].y * CELL + 1, CELL - 2, CELL - 2)
     }
 
     // snake head
-    ctx.fillStyle = '#22c55e'
+    ctx.fillStyle = skin.snakeHeadColor
     ctx.fillRect(snake[0].x * CELL + 1, snake[0].y * CELL + 1, CELL - 2, CELL - 2)
 
     // fruit sprite
@@ -196,6 +200,7 @@ export function startGame(
     const cx = fruit.x * CELL + CELL / 2
     const cy = fruit.y * CELL + CELL / 2
     ctx.save()
+    ctx.globalAlpha = skin.fruitAlpha
     ctx.translate(cx, cy)
     ctx.rotate(fruit.rotation)
     ctx.drawImage(
