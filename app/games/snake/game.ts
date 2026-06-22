@@ -241,6 +241,7 @@ export function startGame(
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault()
     switch (e.key) {
       case 'ArrowUp':    case 'w': case 'W': applyDirection('UP');    break
       case 'ArrowDown':  case 's': case 'S': applyDirection('DOWN');  break

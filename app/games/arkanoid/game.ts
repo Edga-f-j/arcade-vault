@@ -308,7 +308,10 @@ export function startGame(
     }
   }
 
-  function onKeyDown(e: KeyboardEvent) { if (e.key in keys) keys[e.key] = true }
+  function onKeyDown(e: KeyboardEvent) {
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault()
+    if (e.key in keys) keys[e.key] = true
+  }
   function onKeyUp(e: KeyboardEvent)   { if (e.key in keys) keys[e.key] = false }
   function onMouseMove(e: MouseEvent) {
     const rect   = canvas.getBoundingClientRect()

@@ -334,6 +334,7 @@ export function startGame(
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault()
     if (isOver || isPaused) return
 
     switch (e.code) {

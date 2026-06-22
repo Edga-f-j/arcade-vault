@@ -1263,6 +1263,17 @@ a { color: inherit; text-decoration: none; }
   .about-divider { padding: 0 20px; margin: 40px auto; }
 }
 
+/* ── Tetris preview panel ──────────────────────────────────────────────────── */
+.tetris-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+@media (max-width: 720px) {
+  .tetris-preview { display: none; }
+}
+
 /* ── Touch Gamepad ─────────────────────────────────────────────────────────── */
 .touch-gamepad {
   display: none;
