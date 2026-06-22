@@ -5,11 +5,13 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { startGame } from './game'
 import { SKINS, type Skin } from './skins'
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad'
 
 export default function SnakeGame() {
   const router = useRouter()
   const canvasRef    = useRef<HTMLCanvasElement>(null)
-  const setPausedRef = useRef<((p: boolean) => void) | null>(null)
+  const setPausedRef  = useRef<((p: boolean) => void) | null>(null)
+  const sendInputRef  = useRef<((b: GamepadButton, p: boolean) => void) | null>(null)
   const scoreSaved   = useRef(false)
   const skinRef = useRef<Skin>(SKINS.classic)
 
@@ -38,7 +40,7 @@ export default function SnakeGame() {
 
   useEffect(() => {
     if (!gameStarted || !canvasRef.current) return
-    const { cleanup, setPaused: gamePause } = startGame(
+    const { cleanup, setPaused: gamePause, sendInput } = startGame(
       canvasRef.current,
       skinRef,
       (state) => {
@@ -56,6 +58,7 @@ export default function SnakeGame() {
       }
     )
     setPausedRef.current = gamePause
+    sendInputRef.current = sendInput
     return cleanup
   }, [gameStarted]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -209,6 +212,10 @@ export default function SnakeGame() {
 
           <canvas ref={canvasRef} width={600} height={600} style={{ display: 'block' }} />
         </div>
+        <TouchGamepad
+          onInput={(b, p) => sendInputRef.current?.(b, p)}
+          mapping={{ used: ['up', 'down', 'left', 'right'] }}
+        />
         <div className="crt-bottom">
           <span className="led">SEÑAL OK</span>
           <span>SNAKE · CRT-83 · 60 HZ</span>

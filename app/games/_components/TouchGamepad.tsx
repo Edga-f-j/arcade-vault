@@ -1,6 +1,6 @@
 'use client'
 
-type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
+export type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
 
 type GamepadMapping = {
   used: GamepadButton[]
