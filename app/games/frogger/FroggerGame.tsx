@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, type MutableRefObject } from 'react';
+import { SKINS, type Skin } from './skins';
+import type { GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 // ── Constantes del mapa ────────────────────────────────────────────────────
 const COLS = 16;
@@ -53,6 +55,9 @@ interface FroggerGameProps {
   onLivesChange: (lives: number) => void;
   onLevelChange: (level: number) => void;
   onGameOver: (finalScore: number) => void;
+  skinKey?: string;
+  /** Ref que la play-page puede usar para pasar input del TouchGamepad */
+  sendInputRef?: MutableRefObject<((b: GamepadButton, pressed: boolean) => void) | null>;
 }
 
 export default function FroggerGame({
@@ -61,6 +66,8 @@ export default function FroggerGame({
   onLivesChange,
   onLevelChange,
   onGameOver,
+  skinKey = 'classic',
+  sendInputRef,
 }: FroggerGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pausedRef        = useRef(paused);
@@ -68,18 +75,34 @@ export default function FroggerGame({
   const onLivesRef       = useRef(onLivesChange);
   const onLevelRef       = useRef(onLevelChange);
   const onGameOverRef    = useRef(onGameOver);
+  const skinRef          = useRef<Skin>(SKINS[skinKey] ?? SKINS.classic);
+  // pendingDir como ref del componente para que sendInputRef pueda escribirla
+  const pendingDirRef    = useRef<Direction | null>(null);
 
   useEffect(() => { pausedRef.current     = paused;         }, [paused]);
   useEffect(() => { onScoreRef.current    = onScoreChange;  }, [onScoreChange]);
   useEffect(() => { onLivesRef.current    = onLivesChange;  }, [onLivesChange]);
   useEffect(() => { onLevelRef.current    = onLevelChange;  }, [onLevelChange]);
   useEffect(() => { onGameOverRef.current = onGameOver;     }, [onGameOver]);
+  useEffect(() => { skinRef.current       = SKINS[skinKey] ?? SKINS.classic; }, [skinKey]);
 
   const startLoop = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Registrar sendInput en el ref externo para que TouchGamepad pueda usarlo
+    if (sendInputRef) {
+      sendInputRef.current = (button: GamepadButton, pressed: boolean) => {
+        if (!pressed) return; // Frogger usa input discreto
+        const map: Record<string, Direction> = {
+          up: 'up', down: 'down', left: 'left', right: 'right',
+        };
+        const dir = map[button];
+        if (dir) pendingDirRef.current = dir;
+      };
+    }
 
     // ── Estado de la partida ───────────────────────────────────────────────
     let lives = 3;
@@ -88,7 +111,6 @@ export default function FroggerGame({
     let gameOver = false;
     let roundTimer = 25;
     let goals: boolean[] = Array(5).fill(false);
-    let pendingDir: Direction | null = null;
     let rafId = 0;
     let lastTime = performance.now();
 
@@ -118,7 +140,7 @@ export default function FroggerGame({
         ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
         w: 'up', s: 'down', a: 'left', d: 'right',
       };
-      if (map[e.key] && !frog.animating) pendingDir = map[e.key];
+      if (map[e.key] && !frog.animating) pendingDirRef.current = map[e.key];
     }
     document.addEventListener('keydown', onKey);
 
@@ -138,6 +160,7 @@ export default function FroggerGame({
     return () => {
       document.removeEventListener('keydown', onKey);
       cancelAnimationFrame(rafId);
+      if (sendInputRef) sendInputRef.current = null;
     };
 
     // ────────────────────────────────────────────────────────────────────
@@ -274,9 +297,9 @@ export default function FroggerGame({
         }
 
         // Procesar input
-        if (pendingDir) {
-          const dir = pendingDir;
-          pendingDir = null;
+        if (pendingDirRef.current) {
+          const dir = pendingDirRef.current;
+          pendingDirRef.current = null;
           let nc = frog.col;
           let nr = frog.row;
           if (dir === 'up')    nr--;
@@ -414,24 +437,31 @@ export default function FroggerGame({
     // ────────────────────────────────────────────────────────────────────
 
     function draw(c: CanvasRenderingContext2D) {
-      c.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      const s = skinRef.current;
+
+      if (s.boardBg) {
+        c.fillStyle = s.boardBg;
+        c.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      } else {
+        c.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      }
 
       // Fondo por zonas
       for (let row = 0; row < ROWS; row++) {
         if (row === ROW_GOALS) {
-          c.fillStyle = '#1a4a1a';
+          c.fillStyle = s.goalBg;
         } else if (row >= ROW_RIVER_TOP && row <= ROW_RIVER_BOT) {
-          c.fillStyle = '#0a1a3a';
+          c.fillStyle = s.riverBg;
         } else if (row === ROW_SAFE_MID || row === ROW_START) {
-          c.fillStyle = '#1a3a1a';
+          c.fillStyle = s.safeBg;
         } else {
-          c.fillStyle = '#1a1a1a';
+          c.fillStyle = s.roadBg;
         }
         c.fillRect(0, row * CELL, CANVAS_W, CELL);
       }
 
       // Rayas de carretera
-      c.strokeStyle = '#333';
+      c.strokeStyle = s.roadDash;
       c.lineWidth = 1;
       for (let row = ROW_ROAD_TOP; row <= ROW_ROAD_BOT; row++) {
         c.beginPath();
@@ -448,12 +478,20 @@ export default function FroggerGame({
         const gc = goalCols[i];
         const x = gc * CELL;
         const y = ROW_GOALS * CELL;
-        c.fillStyle = goals[i] ? '#2a6a2a' : '#0d3a0d';
+        c.fillStyle = goals[i] ? s.goalFilled : s.goalBg;
         c.fillRect(x, y, CELL * 2, CELL);
-        c.strokeStyle = '#c8a000';
+
+        // Borde de boca destino
+        if (s.shadowBlur > 0) {
+          c.shadowBlur = s.shadowBlur;
+          c.shadowColor = s.shadowColor;
+        }
+        c.strokeStyle = s.goalBorder;
         c.lineWidth = 2;
         c.strokeRect(x + 1, y + 1, CELL * 2 - 2, CELL - 2);
-        if (goals[i]) drawFrogIcon(c, x + CELL, y + CELL / 2, '#4ade80', 10);
+        c.shadowBlur = 0;
+
+        if (goals[i]) drawFrogIcon(c, x + CELL, y + CELL / 2, s.frogColor, 10);
       }
 
       // Entidades
@@ -471,30 +509,61 @@ export default function FroggerGame({
     }
 
     function drawEntity(c: CanvasRenderingContext2D, e: Entity, row: number) {
+      const s = skinRef.current;
       const x = e.col * CELL;
       const y = row * CELL;
       const w = e.width * CELL;
 
       if (e.type === 'car') {
-        const colors = ['#e63946', '#f4a261', '#4895ef'];
-        c.fillStyle = colors[Math.floor((row + e.col) % colors.length)];
+        const color = s.carColors[Math.floor((row + e.col) % s.carColors.length)];
+        if (s.shadowBlur > 0) {
+          c.shadowBlur = s.shadowBlur * 0.6;
+          c.shadowColor = color;
+        }
+        c.fillStyle = color;
         c.fillRect(x + 2, y + 6, w - 4, CELL - 12);
+        // Highlight CRT retro en borde superior
+        if (s.retroHighlight) {
+          c.fillStyle = 'rgba(255,255,255,0.15)';
+          c.fillRect(x + 2, y + 6, w - 4, 4);
+        }
+        c.shadowBlur = 0;
         // Ruedas
-        c.fillStyle = '#111';
+        c.fillStyle = s.wheelColor;
         c.beginPath(); c.arc(x + 8, y + CELL - 8, 5, 0, Math.PI * 2); c.fill();
         c.beginPath(); c.arc(x + w - 8, y + CELL - 8, 5, 0, Math.PI * 2); c.fill();
       } else if (e.type === 'truck') {
-        c.fillStyle = '#888';
+        if (s.shadowBlur > 0) {
+          c.shadowBlur = s.shadowBlur * 0.6;
+          c.shadowColor = s.truckBody;
+        }
+        c.fillStyle = s.truckBody;
         c.fillRect(x + 2, y + 4, w - 4, CELL - 8);
-        c.fillStyle = '#555';
+        // Highlight CRT retro
+        if (s.retroHighlight) {
+          c.fillStyle = 'rgba(255,255,255,0.15)';
+          c.fillRect(x + 2, y + 4, w - 4, 4);
+        }
+        c.shadowBlur = 0;
+        c.fillStyle = s.truckCabin;
         c.fillRect(x + w - CELL + 2, y + 4, CELL - 4, CELL - 8);
-        c.fillStyle = '#111';
+        c.fillStyle = s.wheelColor;
         c.beginPath(); c.arc(x + 8, y + CELL - 8, 5, 0, Math.PI * 2); c.fill();
         c.beginPath(); c.arc(x + w - 8, y + CELL - 8, 5, 0, Math.PI * 2); c.fill();
       } else if (e.type === 'log') {
-        c.fillStyle = '#8B4513';
+        if (s.shadowBlur > 0) {
+          c.shadowBlur = s.shadowBlur * 0.5;
+          c.shadowColor = s.logColor;
+        }
+        c.fillStyle = s.logColor;
         c.fillRect(x + 1, y + 6, w - 2, CELL - 12);
-        c.strokeStyle = '#6B3410';
+        // Highlight CRT retro
+        if (s.retroHighlight) {
+          c.fillStyle = 'rgba(255,255,255,0.15)';
+          c.fillRect(x + 1, y + 6, w - 2, 4);
+        }
+        c.shadowBlur = 0;
+        c.strokeStyle = s.logGrain;
         c.lineWidth = 1;
         for (let i = 1; i < e.width; i++) {
           c.beginPath();
@@ -505,18 +574,22 @@ export default function FroggerGame({
       } else if (e.type === 'turtle') {
         if (e.submerged) {
           c.globalAlpha = 0.3;
-          c.fillStyle = '#22c55e';
+          c.fillStyle = s.turtleSubmerged;
           c.beginPath();
           c.ellipse(x + CELL / 2, y + CELL / 2, 14, 10, 0, 0, Math.PI * 2);
           c.fill();
           c.globalAlpha = 1;
         } else {
-          c.fillStyle = '#15803d';
+          if (s.shadowBlur > 0) {
+            c.shadowBlur = s.shadowBlur * 0.7;
+            c.shadowColor = s.turtleColor;
+          }
+          c.fillStyle = s.turtleColor;
           c.beginPath();
           c.ellipse(x + CELL / 2, y + CELL / 2, 14, 10, 0, 0, Math.PI * 2);
           c.fill();
-          // Patrón de escamas
-          c.strokeStyle = '#166534';
+          c.shadowBlur = 0;
+          c.strokeStyle = s.turtleShell;
           c.lineWidth = 1;
           c.beginPath();
           c.ellipse(x + CELL / 2, y + CELL / 2, 8, 6, 0, 0, Math.PI * 2);
@@ -526,6 +599,7 @@ export default function FroggerGame({
     }
 
     function drawFrog(c: CanvasRenderingContext2D) {
+      const s = skinRef.current;
       let x: number, y: number;
       if (frog.animating) {
         const t = frog.animT / 120;
@@ -535,15 +609,22 @@ export default function FroggerGame({
         x = frog.col * CELL + CELL / 2;
         y = frog.row * CELL + CELL / 2;
       }
-      drawFrogIcon(c, x, y, '#4ade80', 14);
+      drawFrogIcon(c, x, y, s.frogColor, 14);
     }
 
     function drawFrogIcon(c: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) {
+      const s = skinRef.current;
+      // Glow solo para neon
+      if (s.shadowBlur > 0) {
+        c.shadowBlur = s.shadowBlur;
+        c.shadowColor = s.shadowColor;
+      }
       // Cuerpo
       c.fillStyle = color;
       c.beginPath();
       c.ellipse(x, y, size, size * 0.85, 0, 0, Math.PI * 2);
       c.fill();
+      c.shadowBlur = 0;
       // Ojos
       c.fillStyle = '#fff';
       c.beginPath(); c.arc(x - size * 0.4, y - size * 0.4, size * 0.25, 0, Math.PI * 2); c.fill();
@@ -551,13 +632,25 @@ export default function FroggerGame({
       c.fillStyle = '#000';
       c.beginPath(); c.arc(x - size * 0.4, y - size * 0.4, size * 0.12, 0, Math.PI * 2); c.fill();
       c.beginPath(); c.arc(x + size * 0.4, y - size * 0.4, size * 0.12, 0, Math.PI * 2); c.fill();
+      // Contorno neon
+      if (s.shadowBlur > 0) {
+        c.shadowBlur = s.shadowBlur * 0.5;
+        c.shadowColor = s.shadowColor;
+        c.strokeStyle = s.shadowColor;
+        c.lineWidth = 1;
+        c.beginPath();
+        c.ellipse(x, y, size, size * 0.85, 0, 0, Math.PI * 2);
+        c.stroke();
+        c.shadowBlur = 0;
+      }
     }
 
     function drawHUD(c: CanvasRenderingContext2D) {
+      const s = skinRef.current;
       c.font = '14px "Courier New", monospace';
 
       // Score top-left
-      c.fillStyle = '#fff';
+      c.fillStyle = s.hudColor;
       c.textAlign = 'left';
       c.fillText(`${score}`, 8, 20);
 
@@ -567,17 +660,22 @@ export default function FroggerGame({
 
       // Vidas top-right (iconos de rana)
       for (let i = 0; i < lives; i++) {
-        drawFrogIcon(c, CANVAS_W - 16 - i * 22, 16, '#4ade80', 8);
+        drawFrogIcon(c, CANVAS_W - 16 - i * 22, 16, s.frogColor, 8);
       }
 
       // Barra de tiempo — fila inferior, 10px de alto para que sea visible
       const timerMax = Math.max(15, 25 - (level - 1) * 1);
       const ratio = Math.max(0, roundTimer / timerMax);
-      const barColor = ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#eab308' : '#ef4444';
-      c.fillStyle = '#111';
+      const barColor = ratio > 0.5 ? s.frogColor : ratio > 0.25 ? '#eab308' : '#ef4444';
+      c.fillStyle = s.timerBarBg;
       c.fillRect(0, CANVAS_H - 10, CANVAS_W, 10);
+      if (s.shadowBlur > 0) {
+        c.shadowBlur = s.shadowBlur * 0.5;
+        c.shadowColor = barColor;
+      }
       c.fillStyle = barColor;
       c.fillRect(0, CANVAS_H - 10, CANVAS_W * ratio, 10);
+      c.shadowBlur = 0;
       c.fillStyle = 'rgba(255,255,255,0.5)';
       c.font = '9px monospace';
       c.textAlign = 'right';

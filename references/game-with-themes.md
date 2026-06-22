@@ -10,5 +10,6 @@
 | tetris       | —       | —     | —    | —           | —                  | —                    |
 | arkanoid     | ✅      | ✅    | ✅   | —           | sí                 | 2026-06-21           |
 | snake        | ✅      | ✅    | ✅   | —           | sí                 | 2026-06-21           |
+| frogger      | ✅      | ✅    | ✅   | —           | sí                 | 2026-06-22           |
 
 Leyenda: `✅` aplicado y verificado · `🟡` en progreso · `—` pendiente

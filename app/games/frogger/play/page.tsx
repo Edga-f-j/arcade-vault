@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { SKINS } from '../skins';
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 const FroggerGame = dynamic(() => import('../FroggerGame'), { ssr: false });
 
@@ -15,7 +17,19 @@ export default function FroggerPlayPage() {
   const [name, setName]         = useState('');
   const [saved, setSaved]       = useState(false);
   const [gameKey, setGameKey]   = useState(0);
+  const [activeSkin, setActiveSkin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('av_skin_frogger') ?? 'classic';
+    }
+    return 'classic';
+  });
   const scoreSaved               = useRef(false);
+  const sendInputRef             = useRef<((b: GamepadButton, pressed: boolean) => void) | null>(null);
+
+  const handleSkinChange = (key: string) => {
+    setActiveSkin(key);
+    localStorage.setItem('av_skin_frogger', key);
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem('av_player_name');
@@ -88,6 +102,30 @@ export default function FroggerPlayPage() {
           </div>
         </div>
 
+        {/* Selector de skin */}
+        <div className="hud-skins" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {Object.keys(SKINS).map(k => (
+            <button
+              key={k}
+              className={`btn-skin${activeSkin === k ? ' active' : ''}`}
+              onClick={() => handleSkinChange(k)}
+              style={{
+                padding: '4px 10px',
+                fontSize: 11,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                background: activeSkin === k ? 'var(--green)' : 'transparent',
+                color: activeSkin === k ? '#000' : 'var(--ink-dim)',
+                border: `1px solid ${activeSkin === k ? 'var(--green)' : 'var(--ink-faint)'}`,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+
         <div className="hud-actions">
           <button className="btn yellow" onClick={togglePause} disabled={over}>
             {paused ? 'REANUDAR' : 'PAUSA'}
@@ -97,8 +135,8 @@ export default function FroggerPlayPage() {
       </div>
 
       {/* ── CRT + canvas ──────────────────────────────────────────────────── */}
-      <div className="crt">
-        <div className="crt-screen">
+      <div className="crt" style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
+        <div className="crt-screen" style={{ aspectRatio: '8/7' }}>
           <FroggerGame
             key={gameKey}
             paused={paused}
@@ -106,6 +144,8 @@ export default function FroggerPlayPage() {
             onLivesChange={handleLivesChange}
             onLevelChange={handleLevelChange}
             onGameOver={handleGameOver}
+            skinKey={activeSkin}
+            sendInputRef={sendInputRef}
           />
 
           {paused && !over && (
@@ -163,6 +203,10 @@ export default function FroggerPlayPage() {
           )}
         </div>
 
+        <TouchGamepad
+          onInput={(b, p) => sendInputRef.current?.(b, p)}
+          mapping={{ used: ['up', 'down', 'left', 'right'] }}
+        />
         <div className="crt-bottom">
           <span className="led">SEÑAL OK</span>
           <span>FROGGER · CRT-83 · 60 HZ</span>
