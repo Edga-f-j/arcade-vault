@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { startGame } from './game';
 import { SKINS, type Skin } from './skins';
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 interface Props { skinKey?: string }
 
@@ -12,6 +13,7 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
+  const sendInputRef = useRef<( ( b: GamepadButton, p: boolean ) => void ) | null>( null );
   const scoreSaved = useRef( false );
   const skinRef = useRef<Skin>( SKINS[ skinKey ] ?? SKINS.classic );
 
@@ -45,13 +47,14 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
 
   useEffect( () => {
     if ( !gameStarted || !canvasRef.current ) return;
-    const { cleanup, setPaused: gamePause } = startGame( canvasRef.current, skinRef, ( state ) => {
+    const { cleanup, setPaused: gamePause, sendInput } = startGame( canvasRef.current, skinRef, ( state ) => {
       setScore( state.score );
       setLives( state.lives );
       setLevel( state.level );
       if ( state.lives === 0 ) saveScore( state.score );
     } );
     setPausedRef.current = gamePause;
+    sendInputRef.current = sendInput;
     return cleanup;
   }, [ gameStarted ] );
 
@@ -199,6 +202,10 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
             </div>
           ) }
         </div>
+        <TouchGamepad
+          onInput={ (b, p) => sendInputRef.current?.( b, p ) }
+          mapping={{ used: ['up', 'down', 'left', 'right', 'a'], labels: { a: 'FUEGO' } }}
+        />
         <div className="crt-bottom">
           <span className="led">SEÑAL OK</span>
           <span>ASTEROIDS · CRT-83 · 60 HZ</span>
