@@ -149,7 +149,7 @@ export default function ArkanoidGame() {
       </div>
 
       {/* CRT + canvas */}
-      <div className="crt" style={{ maxWidth: 800, width: '100%' }}>
+      <div className="crt" style={{ maxWidth: 800, width: '100%', margin: '0 auto' }}>
         <div className="crt-screen">
 
           {/* Modal nombre */}
