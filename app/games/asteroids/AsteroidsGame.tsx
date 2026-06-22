@@ -4,12 +4,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { startGame } from './game';
+import { SKINS, type Skin } from './skins';
 
-export default function AsteroidsGame() {
+interface Props { skinKey?: string }
+
+export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
   const scoreSaved = useRef( false );
+  const skinRef = useRef<Skin>( SKINS[ skinKey ] ?? SKINS.classic );
 
   const [ score, setScore ] = useState( 0 );
   const [ lives, setLives ] = useState( 3 );
@@ -17,6 +21,22 @@ export default function AsteroidsGame() {
   const [ paused, setPaused ] = useState( false );
   const [ playerName, setPlayerName ] = useState( '' );
   const [ gameStarted, setGameStarted ] = useState( false );
+  const [ activeSkin, setActiveSkin ] = useState( () => {
+    if ( typeof window !== 'undefined' ) {
+      return localStorage.getItem( 'av_skin_asteroids' ) ?? 'classic';
+    }
+    return 'classic';
+  } );
+
+  // Sincronizar skinKey prop → skinRef
+  useEffect( () => {
+    skinRef.current = SKINS[ skinKey ] ?? SKINS.classic;
+  }, [ skinKey ] );
+
+  // Sincronizar activeSkin (selector interno) → skinRef
+  useEffect( () => {
+    skinRef.current = SKINS[ activeSkin ] ?? SKINS.classic;
+  }, [ activeSkin ] );
 
   useEffect( () => {
     const saved = localStorage.getItem( 'arcade_player_name' );
@@ -25,7 +45,7 @@ export default function AsteroidsGame() {
 
   useEffect( () => {
     if ( !gameStarted || !canvasRef.current ) return;
-    const { cleanup, setPaused: gamePause } = startGame( canvasRef.current, ( state ) => {
+    const { cleanup, setPaused: gamePause } = startGame( canvasRef.current, skinRef, ( state ) => {
       setScore( state.score );
       setLives( state.lives );
       setLevel( state.level );
@@ -64,6 +84,11 @@ export default function AsteroidsGame() {
     setPausedRef.current?.( next );
   };
 
+  const handleSkinChange = ( key: string ) => {
+    setActiveSkin( key );
+    localStorage.setItem( 'av_skin_asteroids', key );
+  };
+
   return (
     <div className="av-player fade-in">
       {/* ── HUD externo ─────────────────────────────────────────────────────── */}
@@ -90,6 +115,31 @@ export default function AsteroidsGame() {
             <div className="v">{ String( level ).padStart( 2, '0' ) }</div>
           </div>
         </div>
+
+        {/* Selector de skin */}
+        <div className="hud-skins" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          { Object.keys( SKINS ).map( k => (
+            <button
+              key={ k }
+              className={ `btn-skin${ activeSkin === k ? ' active' : '' }` }
+              onClick={ () => handleSkinChange( k ) }
+              style={{
+                padding: '4px 10px',
+                fontSize: 11,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                background: activeSkin === k ? 'var(--yellow)' : 'transparent',
+                color: activeSkin === k ? '#000' : 'var(--ink-dim)',
+                border: `1px solid ${ activeSkin === k ? 'var(--yellow)' : 'var(--ink-faint)' }`,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              { k }
+            </button>
+          ) ) }
+        </div>
+
         <div className="hud-actions">
           <button className="btn yellow" onClick={ togglePause }>
             { paused ? 'REANUDAR' : 'PAUSA' }

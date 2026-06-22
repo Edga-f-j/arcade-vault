@@ -1,3 +1,5 @@
+import { type Skin } from './skins';
+
 const W = 800;
 const H = 600;
 
@@ -20,6 +22,7 @@ type GameState = { score: number; lives: number; level: number };
 
 export function startGame(
   canvas: HTMLCanvasElement,
+  skinRef: { current: Skin },
   onStateChange?: ( state: GameState ) => void
 ): { cleanup: () => void; setPaused: ( p: boolean ) => void } {
   const ctx = canvas.getContext( '2d' )!;
@@ -65,10 +68,14 @@ export function startGame(
     }
 
     draw() {
-      ctx.fillStyle = '#fff';
+      const skin = skinRef.current;
+      ctx.shadowBlur = skin.shadowBlur;
+      ctx.shadowColor = skin.shadowColor;
+      ctx.fillStyle = skin.bulletColor;
       ctx.beginPath();
       ctx.arc( this.x, this.y, this.radius, 0, Math.PI * 2 );
       ctx.fill();
+      ctx.shadowBlur = 0;
     }
   }
 
@@ -111,10 +118,14 @@ export function startGame(
     }
 
     draw() {
+      const skin = skinRef.current;
       ctx.save();
       ctx.translate( this.x, this.y );
       ctx.rotate( this.rot );
-      ctx.strokeStyle = '#fff';
+
+      ctx.shadowBlur = skin.shadowBlur;
+      ctx.shadowColor = skin.shadowColor;
+      ctx.strokeStyle = skin.shipColor;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = 'round';
       ctx.beginPath();
@@ -123,6 +134,17 @@ export function startGame(
         ctx.lineTo( this.verts[ i ][ 0 ], this.verts[ i ][ 1 ] );
       ctx.closePath();
       ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Highlight CRT retro: línea blanca semitransparente en borde superior del bbox
+      if ( skin.retroHighlight ) {
+        const minY = Math.min( ...this.verts.map( v => v[ 1 ] ) );
+        const minX = Math.min( ...this.verts.map( v => v[ 0 ] ) );
+        const maxX = Math.max( ...this.verts.map( v => v[ 0 ] ) );
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect( minX, minY, maxX - minX, 4 );
+      }
+
       ctx.restore();
     }
   }
@@ -149,16 +171,20 @@ export function startGame(
 
     draw() {
       if ( this.ttl < 2 && Math.floor( this.ttl * 8 ) % 2 === 0 ) return;
+      const skin = skinRef.current;
       const pulse = 0.85 + Math.sin( performance.now() / 150 ) * 0.15;
       ctx.save();
       ctx.translate( this.x, this.y );
       ctx.rotate( Math.PI / 4 );
-      ctx.strokeStyle = '#0ff';
+      ctx.shadowBlur = skin.shadowBlur;
+      ctx.shadowColor = skin.powerUpColor;
+      ctx.strokeStyle = skin.powerUpColor;
       ctx.lineWidth = 2;
       const r = this.radius * pulse;
       ctx.strokeRect( -r, -r, r * 2, r * 2 );
+      ctx.shadowBlur = 0;
       ctx.restore();
-      ctx.fillStyle = '#0ff';
+      ctx.fillStyle = skin.powerUpColor;
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -229,10 +255,14 @@ export function startGame(
       if ( this.dead ) return;
       if ( this.invincible > 0 && Math.floor( this.invincible * 8 ) % 2 === 0 ) return;
 
+      const skin = skinRef.current;
       ctx.save();
       ctx.translate( this.x, this.y );
       ctx.rotate( this.angle );
-      ctx.strokeStyle = '#fff';
+
+      ctx.shadowBlur = skin.shadowBlur;
+      ctx.shadowColor = skin.shadowColor;
+      ctx.strokeStyle = skin.shipColor;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = 'round';
 
@@ -243,13 +273,14 @@ export function startGame(
       ctx.lineTo( -12, 9 );
       ctx.closePath();
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       if ( this.thrusting && Math.random() > 0.35 ) {
         ctx.beginPath();
         ctx.moveTo( -8, -4 );
         ctx.lineTo( -8 - rand( 6, 14 ), 0 );
         ctx.lineTo( -8, 4 );
-        ctx.strokeStyle = 'rgba(255, 130, 0, 0.85)';
+        ctx.strokeStyle = skin.thrustColor;
         ctx.stroke();
       }
 
@@ -280,8 +311,14 @@ export function startGame(
     }
 
     draw() {
+      const skin = skinRef.current;
       const alpha = this.ttl / this.life;
-      ctx.strokeStyle = `rgba(255,255,255,${ alpha.toFixed( 2 ) })`;
+      // Extraer componentes RGB del color de partícula para aplicar alpha
+      const hex = skin.particleColor.replace( '#', '' );
+      const r = parseInt( hex.substring( 0, 2 ), 16 );
+      const g = parseInt( hex.substring( 2, 4 ), 16 );
+      const b = parseInt( hex.substring( 4, 6 ), 16 );
+      ctx.strokeStyle = `rgba(${ r },${ g },${ b },${ alpha.toFixed( 2 ) })`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo( this.x, this.y );
@@ -431,10 +468,11 @@ export function startGame(
 
   // ── Draw ───────────────────────────────────────────────────────────────────
   function drawLifeIcon( x: number, y: number ) {
+    const skin = skinRef.current;
     ctx.save();
     ctx.translate( x, y );
     ctx.rotate( -Math.PI / 2 );
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = skin.hudColor;
     ctx.lineWidth = 1.2;
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -448,7 +486,8 @@ export function startGame(
   }
 
   function drawHUD() {
-    ctx.fillStyle = '#fff';
+    const skin = skinRef.current;
+    ctx.fillStyle = skin.hudColor;
     ctx.font = '15px monospace';
     ctx.textBaseline = 'alphabetic';
 
@@ -463,14 +502,15 @@ export function startGame(
 
     if ( ship.tripleShot > 0 ) {
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#0ff';
+      ctx.fillStyle = skin.tripleShotColor;
       ctx.fillText( `3x  ${ ship.tripleShot.toFixed( 1 ) }s`, 14, 46 );
     }
   }
 
   function drawOverlay( title: string, sub: string ) {
+    const skin = skinRef.current;
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = skin.hudColor;
     ctx.font = 'bold 46px monospace';
     ctx.fillText( title, W / 2, H / 2 - 18 );
     ctx.font = '18px monospace';
@@ -479,7 +519,8 @@ export function startGame(
   }
 
   function draw() {
-    ctx.fillStyle = '#000';
+    const skin = skinRef.current;
+    ctx.fillStyle = skin.boardBg || '#000000';
     ctx.fillRect( 0, 0, W, H );
 
     particles.forEach( p => p.draw() );
