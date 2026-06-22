@@ -5,11 +5,13 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { startGame } from './game'
 import { SKINS, type Skin } from './skins'
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad'
 
 export default function ArkanoidGame() {
   const router = useRouter()
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const setPausedRef = useRef<((p: boolean) => void) | null>(null)
+  const sendInputRef = useRef<((b: GamepadButton, p: boolean) => void) | null>(null)
   const scoreSaved   = useRef(false)
   const skinRef = useRef<Skin>(SKINS.classic)
 
@@ -39,7 +41,7 @@ export default function ArkanoidGame() {
 
   useEffect(() => {
     if (!gameStarted || !canvasRef.current) return
-    const { cleanup, setPaused: gamePause } = startGame(canvasRef.current, skinRef, (state) => {
+    const { cleanup, setPaused: gamePause, sendInput } = startGame(canvasRef.current, skinRef, (state) => {
       setScore(state.score)
       setLives(state.lives)
       setLevel(state.level)
@@ -53,6 +55,7 @@ export default function ArkanoidGame() {
       }
     })
     setPausedRef.current = gamePause
+    sendInputRef.current = sendInput
     return cleanup
   }, [gameStarted]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -146,8 +149,8 @@ export default function ArkanoidGame() {
       </div>
 
       {/* CRT + canvas */}
-      <div className="crt">
-        <div className="crt-screen" style={{ width: 800, height: 600 }}>
+      <div className="crt" style={{ maxWidth: 800, width: '100%', margin: '0 auto' }}>
+        <div className="crt-screen">
 
           {/* Modal nombre */}
           {!gameStarted && (
@@ -216,8 +219,12 @@ export default function ArkanoidGame() {
             </div>
           )}
 
-          <canvas ref={canvasRef} width={800} height={600} style={{ display: 'block' }} />
+          <canvas ref={canvasRef} width={800} height={600} style={{ display: 'block', width: '100%', height: '100%' }} />
         </div>
+        <TouchGamepad
+          onInput={(b, p) => sendInputRef.current?.(b, p)}
+          mapping={{ used: ['left', 'right', 'a'], labels: { a: 'LANZAR' } }}
+        />
         <div className="crt-bottom">
           <span className="led">SEÑAL OK</span>
           <span>ARKANOID · CRT-83 · 60 HZ</span>

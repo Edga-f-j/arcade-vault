@@ -1262,3 +1262,132 @@ a { color: inherit; text-decoration: none; }
   .about-contact { padding: 0 20px; }
   .about-divider { padding: 0 20px; margin: 40px auto; }
 }
+
+/* ── Tetris preview panel ──────────────────────────────────────────────────── */
+.tetris-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+@media (max-width: 900px) {
+  .tetris-preview { display: none; }
+}
+
+/* ── Touch Gamepad ─────────────────────────────────────────────────────────── */
+.touch-gamepad {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .touch-gamepad {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px 20px;
+    margin-top: 12px;
+    background: rgba(10,10,15,0.75);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    gap: 24px;
+  }
+}
+
+/* D-pad */
+.gamepad-dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.gamepad-dpad__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.gamepad-dpad__center {
+  width: 56px;
+  height: 56px;
+}
+
+/* Action buttons */
+.gamepad-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.gamepad-actions__a {
+  order: 1;
+}
+.gamepad-actions__b {
+  order: 0;
+}
+
+/* Base button */
+.gamepad-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  border: 2px solid var(--cyan);
+  background: rgba(0,245,255,0.08);
+  color: var(--cyan);
+  font-family: var(--pixel);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 80ms, box-shadow 80ms;
+  box-shadow: 0 0 8px rgba(0,245,255,0.2);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.gamepad-btn:active,
+.gamepad-btn.active {
+  background: rgba(0,245,255,0.28);
+  box-shadow: 0 0 14px rgba(0,245,255,0.55);
+}
+.gamepad-actions__a.gamepad-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border-color: var(--magenta);
+  color: var(--magenta);
+  background: rgba(255,0,110,0.08);
+  box-shadow: 0 0 8px rgba(255,0,110,0.2);
+  font-size: 9px;
+}
+.gamepad-actions__a.gamepad-btn:active {
+  background: rgba(255,0,110,0.28);
+  box-shadow: 0 0 14px rgba(255,0,110,0.55);
+}
+.gamepad-actions__b.gamepad-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+/* Disabled / unused buttons */
+.gamepad-btn--disabled {
+  border-color: var(--line);
+  color: var(--ink-faint);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* HUD wrap on small screens */
+@media (max-width: 720px) {
+  .player-hud {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .hud-stat .v {
+    font-size: 13px;
+  }
+}

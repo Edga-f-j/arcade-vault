@@ -20,11 +20,13 @@ const randInt = ( min: number, max: number ) => Math.floor( rand( min, max + 1 )
 
 type GameState = { score: number; lives: number; level: number };
 
+type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
+
 export function startGame(
   canvas: HTMLCanvasElement,
   skinRef: { current: Skin },
   onStateChange?: ( state: GameState ) => void
-): { cleanup: () => void; setPaused: ( p: boolean ) => void } {
+): { cleanup: () => void; setPaused: ( p: boolean ) => void; sendInput: ( button: GamepadButton, pressed: boolean ) => void } {
   const ctx = canvas.getContext( '2d' )!;
 
   // ── Input ──────────────────────────────────────────────────────────────────
@@ -555,6 +557,14 @@ export function startGame(
   notifyState();
   rafId = requestAnimationFrame( loop );
 
+  function sendInput( button: GamepadButton, pressed: boolean ) {
+    if ( button === 'left' )  keys[ 'ArrowLeft' ]  = pressed
+    if ( button === 'right' ) keys[ 'ArrowRight' ] = pressed
+    if ( button === 'up' )    keys[ 'ArrowUp' ]    = pressed
+    if ( button === 'a' && pressed ) justPressed[ 'Space' ] = true
+    // 'down' (hyperspace) not yet implemented in keyboard — no-op
+  }
+
   return {
     cleanup: () => {
       cancelAnimationFrame( rafId );
@@ -562,5 +572,6 @@ export function startGame(
       window.removeEventListener( 'keyup', onKeyUp );
     },
     setPaused: ( p: boolean ) => { isPaused = p; },
+    sendInput,
   };
 }

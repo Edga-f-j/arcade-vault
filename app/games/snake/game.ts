@@ -52,12 +52,14 @@ function randInt(max: number) {
   return Math.floor(Math.random() * max)
 }
 
+type GamepadButton = 'up' | 'down' | 'left' | 'right' | 'a' | 'b'
+
 export function startGame(
   canvas: HTMLCanvasElement,
   skinRef: { current: Skin },
   onStateChange?: (state: GameState) => void,
   onPauseToggle?: (paused: boolean) => void
-): { cleanup: () => void; setPaused: (p: boolean) => void } {
+): { cleanup: () => void; setPaused: (p: boolean) => void; sendInput: (button: GamepadButton, pressed: boolean) => void } {
   const ctx = canvas.getContext('2d')!
 
   let snake: Cell[] = [
@@ -234,28 +236,17 @@ export function startGame(
     if (!gameOver) rafId = requestAnimationFrame(loop)
   }
 
+  function applyDirection(d: Dir) {
+    if (dir !== OPPOSITE[d]) nextDir = d
+  }
+
   function onKeyDown(e: KeyboardEvent) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault()
     switch (e.key) {
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        if (dir !== OPPOSITE['UP']) nextDir = 'UP'
-        break
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (dir !== OPPOSITE['DOWN']) nextDir = 'DOWN'
-        break
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        if (dir !== OPPOSITE['LEFT']) nextDir = 'LEFT'
-        break
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        if (dir !== OPPOSITE['RIGHT']) nextDir = 'RIGHT'
-        break
+      case 'ArrowUp':    case 'w': case 'W': applyDirection('UP');    break
+      case 'ArrowDown':  case 's': case 'S': applyDirection('DOWN');  break
+      case 'ArrowLeft':  case 'a': case 'A': applyDirection('LEFT');  break
+      case 'ArrowRight': case 'd': case 'D': applyDirection('RIGHT'); break
       case 'p':
       case 'P': {
         const next = !isPaused
@@ -264,6 +255,14 @@ export function startGame(
         break
       }
     }
+  }
+
+  function sendInput(button: GamepadButton, pressed: boolean) {
+    if (!pressed) return
+    if (button === 'up')    applyDirection('UP')
+    if (button === 'down')  applyDirection('DOWN')
+    if (button === 'left')  applyDirection('LEFT')
+    if (button === 'right') applyDirection('RIGHT')
   }
 
   function removeListeners() {
@@ -283,5 +282,5 @@ export function startGame(
     removeListeners()
   }
 
-  return { cleanup, setPaused }
+  return { cleanup, setPaused, sendInput }
 }

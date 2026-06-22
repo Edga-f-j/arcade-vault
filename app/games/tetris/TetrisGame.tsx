@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { startGame } from './game';
+import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 export default function TetrisGame() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const nextCanvasRef = useRef<HTMLCanvasElement>( null );
-  const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
+  const setPausedRef  = useRef<( ( p: boolean ) => void ) | null>( null );
+  const sendInputRef  = useRef<( ( b: GamepadButton, p: boolean ) => void ) | null>( null );
   const scoreSaved = useRef( false );
 
   const [ score, setScore ] = useState( 0 );
@@ -27,7 +29,7 @@ export default function TetrisGame() {
 
   useEffect( () => {
     if ( !gameStarted || !canvasRef.current || !nextCanvasRef.current ) return;
-    const { cleanup, setPaused: gamePause } = startGame(
+    const { cleanup, setPaused: gamePause, sendInput } = startGame(
       canvasRef.current,
       nextCanvasRef.current,
       ( state ) => {
@@ -41,6 +43,7 @@ export default function TetrisGame() {
       }
     );
     setPausedRef.current = gamePause;
+    sendInputRef.current = sendInput;
     return cleanup;
   }, [ gameStarted ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -104,9 +107,9 @@ export default function TetrisGame() {
       </div>
 
       {/* ── CRT + canvas + preview ───────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center' }}>
-        <div className="crt">
-          <div className="crt-screen" style={{ width: 300, height: 600 }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="crt" style={{ maxWidth: 420, width: '100%', flex: '1 1 280px' }}>
+          <div className="crt-screen" style={{ aspectRatio: '1/2' }}>
             { !gameStarted && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.85)', zIndex: 10 }}>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
@@ -142,7 +145,7 @@ export default function TetrisGame() {
               ref={ canvasRef }
               width={ 300 }
               height={ 600 }
-              style={{ display: 'block' }}
+              style={{ display: 'block', width: '100%', height: '100%' }}
             />
             { paused && !gameOver && (
               <div className="crt-content" style={{ background: 'rgba(0,0,0,0.65)', zIndex: 5 }}>
@@ -167,6 +170,10 @@ export default function TetrisGame() {
               </div>
             ) }
           </div>
+          <TouchGamepad
+            onInput={ (b, p) => sendInputRef.current?.( b, p ) }
+            mapping={{ used: ['up','down','left','right','a'], labels: { a: 'DROP' } }}
+          />
           <div className="crt-bottom">
             <span className="led">SEÑAL OK</span>
             <span>TETRIS · CRT-83 · 60 HZ</span>
@@ -175,7 +182,7 @@ export default function TetrisGame() {
         </div>
 
         {/* ── Panel preview ───────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+        <div className="tetris-preview">
           <div className="mono" style={{ fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-dim)', textAlign: 'center' }}>
             SIGUIENTE
           </div>
