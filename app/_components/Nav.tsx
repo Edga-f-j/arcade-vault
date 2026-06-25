@@ -9,7 +9,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
 
   const isActive = (href: string) => {
     if (href === "/biblioteca") return pathname === "/biblioteca" || pathname.startsWith("/detalle") || pathname.startsWith("/player")
@@ -18,8 +18,8 @@ export default function Nav() {
 
   function close() { setOpen(false) }
 
-  function handleSignOut() {
-    signOut()
+  async function handleSignOut() {
+    await signOut()
     close()
   }
 
@@ -57,13 +57,13 @@ export default function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
 
-        {user ? (
+        {user && profile ? (
           <button className="btn ghost auth-btn" onClick={handleSignOut}>
-            {user.name} ▾
+            {profile.username} · SALIR
           </button>
         ) : (
           <button className="btn auth-btn" onClick={goAuth}>
-            Iniciar Sesión
+            ENTRAR
           </button>
         )}
 
@@ -93,13 +93,13 @@ export default function Nav() {
         <Link href="/about" className={isActive("/about") ? "active" : ""} onClick={close}>
           ACERCA DE
         </Link>
-        {user ? (
+        {user && profile ? (
           <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
-            {user.name} · Cerrar sesión
+            {profile.username} · SALIR
           </button>
         ) : (
           <Link href="/auth" className={isActive("/auth") ? "active" : ""} onClick={close}>
-            Iniciar Sesión
+            ENTRAR
           </Link>
         )}
         <div style={{ flex: 1 }} />
