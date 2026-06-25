@@ -1,42 +1,64 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import type { User } from "@/lib/data"
+import type { User } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
+
+interface Profile {
+  username: string
+}
 
 interface AuthContextValue {
   user: User | null
-  login: (u: User) => void
-  signOut: () => void
+  profile: Profile | null
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
-  login: () => {},
-  signOut: () => {},
+  profile: null,
+  signOut: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const supabase = createClient()
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("av_user")
-      if (stored) setUser(JSON.parse(stored))
-    } catch {}
-  }, [])
-
-  function login(u: User) {
-    setUser(u)
-    localStorage.setItem("av_user", JSON.stringify(u))
+  async function loadProfile(userId: string) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", userId)
+      .single()
+    setProfile(data ?? null)
   }
 
-  function signOut() {
-    setUser(null)
-    localStorage.removeItem("av_user")
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      if (session?.user) loadProfile(session.user.id)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        loadProfile(session.user.id)
+      } else {
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function signOut() {
+    await supabase.auth.signOut()
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signOut }}>
+    <AuthContext.Provider value={{ user, profile, signOut }}>
       {children}
     </AuthContext.Provider>
   )
