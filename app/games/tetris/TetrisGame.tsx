@@ -3,11 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/app/_context/AuthContext';
 import { startGame } from './game';
 import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 export default function TetrisGame() {
   const router = useRouter();
+  const { user, profile } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const nextCanvasRef = useRef<HTMLCanvasElement>( null );
   const setPausedRef  = useRef<( ( p: boolean ) => void ) | null>( null );
@@ -26,6 +28,10 @@ export default function TetrisGame() {
     const saved = localStorage.getItem( 'arcade_player_name' );
     if ( saved ) setPlayerName( saved );
   }, [] );
+
+  useEffect( () => {
+    if ( user && profile ) setGameStarted( true );
+  }, [ user, profile ] );
 
   useEffect( () => {
     if ( !gameStarted || !canvasRef.current || !nextCanvasRef.current ) return;
@@ -49,12 +55,14 @@ export default function TetrisGame() {
 
   async function saveScore( value: number ) {
     if ( scoreSaved.current || value <= 0 ) return;
+    if ( !user || !profile ) return;
     scoreSaved.current = true;
     const supabase = createClient();
     await supabase.from( 'scores' ).insert( {
-      player_name: playerName || 'INVITADO',
+      player_name: profile.username,
       game_slug: 'tetris',
       score: value,
+      user_id: user.id,
     } );
   }
 
@@ -83,7 +91,7 @@ export default function TetrisGame() {
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <div className="hud-stat">
             <div className="l">Jugador</div>
-            <div className="v" style={{ color: 'var(--ink)' }}>{ playerName || 'INVITADO' }</div>
+            <div className="v" style={{ color: 'var(--ink)' }}>{ profile?.username || playerName || 'INVITADO' }</div>
           </div>
           <div className="hud-stat">
             <div className="l">Puntuación</div>

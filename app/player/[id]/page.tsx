@@ -10,7 +10,7 @@ import { useAuth } from "@/app/_context/AuthContext"
 export default function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const game = GAMES.find((g) => g.id === id)
-  const { user } = useAuth()
+  const { profile } = useAuth()
   const router = useRouter()
 
   const [score, setScore] = useState(0)
@@ -18,7 +18,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [level, setLevel] = useState(1)
   const [paused, setPaused] = useState(false)
   const [over, setOver] = useState(false)
-  const [name, setName] = useState(user?.name ?? "INVITADO")
+  const [name, setName] = useState(profile?.username ?? "INVITADO")
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
