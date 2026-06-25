@@ -2,25 +2,52 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/app/_context/AuthContext"
+import { createClient } from "@/lib/supabase/client"
 
 export default function AuthPage() {
   const [tab, setTab] = useState<"in" | "up">("in")
-  const [user, setUser] = useState("")
-  const [pass, setPass] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
-  const { login } = useAuth()
+  const [pass, setPass] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
-  function submit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    login({ name: (user || "PLAYER1").toUpperCase().slice(0, 10) })
+    setError(null)
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
+    setLoading(false)
+    if (error) { setError(error.message); return }
     router.push("/biblioteca")
   }
 
-  function playAsGuest() {
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!username.trim()) { setError("El nombre de usuario es obligatorio"); return }
+    if (username.length > 10) { setError("El nombre de usuario no puede tener más de 10 caracteres"); return }
+    setLoading(true)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: pass,
+      options: { data: { username: username.toUpperCase().slice(0, 10) } },
+    })
+    setLoading(false)
+    if (error) { setError(error.message); return }
     router.push("/biblioteca")
   }
+
+  async function handleOAuth(provider: "google" | "github") {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${location.origin}/auth/callback` },
+    })
+  }
+
+  const isLogin = tab === "in"
 
   return (
     <div className="av-auth-wrap fade-in">
@@ -34,34 +61,37 @@ export default function AuthPage() {
         </div>
 
         <div className="auth-tabs">
-          <button className={tab === "in" ? "on" : ""} onClick={() => setTab("in")}>
+          <button className={isLogin ? "on" : ""} onClick={() => { setTab("in"); setError(null) }}>
             INICIAR SESIÓN
           </button>
-          <button className={tab === "up" ? "on" : ""} onClick={() => setTab("up")}>
+          <button className={!isLogin ? "on" : ""} onClick={() => { setTab("up"); setError(null) }}>
             CREAR CUENTA
           </button>
         </div>
 
-        <form onSubmit={submit}>
-          <div className="field">
-            <label>Usuario</label>
-            <input
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              placeholder="px_kai"
-            />
-          </div>
-          {tab === "up" && (
+        <form onSubmit={isLogin ? handleLogin : handleRegister}>
+          {!isLogin && (
             <div className="field slide-in">
-              <label>Correo electrónico</label>
+              <label>Usuario (máx. 10 caracteres)</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jugador@vault.gg"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="px_kai"
+                maxLength={10}
+                required
               />
             </div>
           )}
+          <div className="field">
+            <label>Correo electrónico</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jugador@vault.gg"
+              required
+            />
+          </div>
           <div className="field">
             <label>Contraseña</label>
             <input
@@ -69,21 +99,33 @@ export default function AuthPage() {
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               placeholder="••••••••"
+              required
             />
           </div>
-          <button className="btn lg" type="submit" style={{ width: "100%", marginTop: 8 }}>
-            {tab === "in" ? "ENTRAR AL VAULT" : "CREAR Y JUGAR"}
+
+          {error && (
+            <div style={{ color: "var(--magenta)", fontSize: 12, marginTop: 6, letterSpacing: "0.05em" }}>
+              {error}
+            </div>
+          )}
+
+          {isLogin && (
+            <div style={{ textAlign: "right", marginTop: 4 }}>
+              <a href="/auth/reset" style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.08em" }}>
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+          )}
+
+          <button className="btn lg" type="submit" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
+            {loading ? "..." : isLogin ? "ENTRAR AL VAULT" : "CREAR Y JUGAR"}
           </button>
         </form>
 
-        <button className="btn ghost" style={{ width: "100%", marginTop: 10 }} onClick={playAsGuest}>
-          JUGAR COMO INVITADO
-        </button>
-
         <div className="auth-divider">O CONTINÚA CON</div>
         <div className="social">
-          <button className="btn ghost" type="button">◆ GOOGLE</button>
-          <button className="btn ghost" type="button">▣ GITHUB</button>
+          <button className="btn ghost" type="button" onClick={() => handleOAuth("google")}>◆ GOOGLE</button>
+          <button className="btn ghost" type="button" onClick={() => handleOAuth("github")}>▣ GITHUB</button>
         </div>
 
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em" }}>
