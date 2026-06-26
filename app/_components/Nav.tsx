@@ -58,9 +58,25 @@ export default function Nav() {
         </div>
 
         {user && profile ? (
-          <button className="btn ghost auth-btn" onClick={handleSignOut}>
-            {profile.username} · SALIR
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 28, height: 28,
+              background: "var(--cyan)",
+              color: "#000",
+              fontFamily: "var(--font-pixel)",
+              fontSize: 11,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              {profile.username[0].toUpperCase()}
+            </div>
+            <span className="mono" style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--ink)" }}>
+              {profile.username}
+            </span>
+            <button className="btn ghost auth-btn" onClick={handleSignOut}>
+              SALIR
+            </button>
+          </div>
         ) : (
           <button className="btn auth-btn" onClick={goAuth}>
             ENTRAR
@@ -94,9 +110,27 @@ export default function Nav() {
           ACERCA DE
         </Link>
         {user && profile ? (
-          <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
-            {profile.username} · SALIR
-          </button>
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+              <div style={{
+                width: 28, height: 28,
+                background: "var(--cyan)",
+                color: "#000",
+                fontFamily: "var(--font-pixel)",
+                fontSize: 11,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                {profile.username[0].toUpperCase()}
+              </div>
+              <span className="mono" style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--ink)" }}>
+                {profile.username}
+              </span>
+            </div>
+            <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
+              SALIR
+            </button>
+          </>
         ) : (
           <Link href="/auth" className={isActive("/auth") ? "active" : ""} onClick={close}>
             ENTRAR

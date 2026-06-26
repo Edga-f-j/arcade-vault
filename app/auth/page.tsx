@@ -20,7 +20,7 @@ export default function AuthPage() {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
     setLoading(false)
-    if (error) { setError(error.message); return }
+    if (error) { setError(error.message || 'Credenciales incorrectas. Intenta de nuevo.'); return }
     router.push("/biblioteca")
   }
 
@@ -36,7 +36,11 @@ export default function AuthPage() {
       options: { data: { username: username.toUpperCase().slice(0, 10) } },
     })
     setLoading(false)
-    if (error) { setError(error.message); return }
+    if (error) {
+      const msg = error.message && error.message !== '{}' ? error.message : 'Error al crear la cuenta. Intenta de nuevo.'
+      setError(msg)
+      return
+    }
     router.push("/biblioteca")
   }
 
