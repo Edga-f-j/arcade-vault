@@ -24,11 +24,17 @@ export default function AuthPage() {
     router.push("/biblioteca")
   }
 
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     if (!username.trim()) { setError("El nombre de usuario es obligatorio"); return }
     if (username.length > 10) { setError("El nombre de usuario no puede tener más de 10 caracteres"); return }
+    if (!PASSWORD_REGEX.test(pass)) {
+      setError("La contraseña debe tener mínimo 8 caracteres e incluir mayúsculas, minúsculas, números y símbolos.")
+      return
+    }
     setLoading(true)
     const { error } = await supabase.auth.signUp({
       email,
