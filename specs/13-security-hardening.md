@@ -1,6 +1,6 @@
 # SPEC 13 — Hardening de seguridad (RLS, Auth, headers)
 
-> **Status:** aprobado · **Depends on:** 12-auth-supabase · **Date:** 2026-06-26
+> **Status:** implementado · **Depends on:** 12-auth-supabase · **Date:** 2026-06-26
 > **Objective:** Cerrar los hallazgos del checklist de seguridad — restringir el INSERT permisivo en `scores`, revocar `EXECUTE` de las funciones `SECURITY DEFINER`, añadir headers de seguridad en Next.js, validar contraseña robusta en el registro, y documentar los ajustes de Auth del dashboard (min password, leaked password protection, signup rate).
 
 ---
