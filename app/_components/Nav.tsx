@@ -9,7 +9,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
 
   const isActive = (href: string) => {
     if (href === "/biblioteca") return pathname === "/biblioteca" || pathname.startsWith("/detalle") || pathname.startsWith("/player")
@@ -18,8 +18,8 @@ export default function Nav() {
 
   function close() { setOpen(false) }
 
-  function handleSignOut() {
-    signOut()
+  async function handleSignOut() {
+    await signOut()
     close()
   }
 
@@ -57,13 +57,29 @@ export default function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
 
-        {user ? (
-          <button className="btn ghost auth-btn" onClick={handleSignOut}>
-            {user.name} ▾
-          </button>
+        {user && profile ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 28, height: 28,
+              background: "var(--cyan)",
+              color: "#000",
+              fontFamily: "var(--font-pixel)",
+              fontSize: 11,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              {profile.username[0].toUpperCase()}
+            </div>
+            <span className="mono" style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--ink)" }}>
+              {profile.username}
+            </span>
+            <button className="btn ghost auth-btn" onClick={handleSignOut}>
+              SALIR
+            </button>
+          </div>
         ) : (
           <button className="btn auth-btn" onClick={goAuth}>
-            Iniciar Sesión
+            ENTRAR
           </button>
         )}
 
@@ -93,13 +109,31 @@ export default function Nav() {
         <Link href="/about" className={isActive("/about") ? "active" : ""} onClick={close}>
           ACERCA DE
         </Link>
-        {user ? (
-          <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
-            {user.name} · Cerrar sesión
-          </button>
+        {user && profile ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+              <div style={{
+                width: 28, height: 28,
+                background: "var(--cyan)",
+                color: "#000",
+                fontFamily: "var(--font-pixel)",
+                fontSize: 11,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                {profile.username[0].toUpperCase()}
+              </div>
+              <span className="mono" style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--ink)" }}>
+                {profile.username}
+              </span>
+            </div>
+            <button className="btn ghost" style={{ textAlign: "left", padding: "14px 12px" }} onClick={handleSignOut}>
+              SALIR
+            </button>
+          </>
         ) : (
           <Link href="/auth" className={isActive("/auth") ? "active" : ""} onClick={close}>
-            Iniciar Sesión
+            ENTRAR
           </Link>
         )}
         <div style={{ flex: 1 }} />

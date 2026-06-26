@@ -41,6 +41,24 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       scores: {
         Row: {
           created_at: string
@@ -48,6 +66,7 @@ export type Database = {
           id: string
           player_name: string
           score: number
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -55,6 +74,7 @@ export type Database = {
           id?: string
           player_name: string
           score: number
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -62,6 +82,7 @@ export type Database = {
           id?: string
           player_name?: string
           score?: number
+          user_id?: string | null
         }
         Relationships: [
           {

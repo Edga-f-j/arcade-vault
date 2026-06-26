@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/app/_context/AuthContext';
 import { startGame } from './game';
 import { SKINS, type Skin } from './skins';
 import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
@@ -11,6 +12,7 @@ interface Props { skinKey?: string }
 
 export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
   const router = useRouter();
+  const { user, profile } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>( null );
   const setPausedRef = useRef<( ( p: boolean ) => void ) | null>( null );
   const sendInputRef = useRef<( ( b: GamepadButton, p: boolean ) => void ) | null>( null );
@@ -46,6 +48,10 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
   }, [] );
 
   useEffect( () => {
+    if ( user && profile ) setGameStarted( true );
+  }, [ user, profile ] );
+
+  useEffect( () => {
     if ( !gameStarted || !canvasRef.current ) return;
     const { cleanup, setPaused: gamePause, sendInput } = startGame( canvasRef.current, skinRef, ( state ) => {
       setScore( state.score );
@@ -60,12 +66,14 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
 
   async function saveScore( value: number ) {
     if ( scoreSaved.current || value <= 0 ) return;
+    if ( !user || !profile ) return;
     scoreSaved.current = true;
     const supabase = createClient();
     await supabase.from( 'scores' ).insert( {
-      player_name: playerName || 'INVITADO',
+      player_name: profile.username,
       game_slug: 'asteroids',
       score: value,
+      user_id: user.id,
     } );
   }
 
@@ -99,7 +107,7 @@ export default function AsteroidsGame( { skinKey = 'classic' }: Props ) {
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <div className="hud-stat">
             <div className="l">Jugador</div>
-            <div className="v" style={{ color: 'var(--ink)' }}>{ playerName || 'INVITADO' }</div>
+            <div className="v" style={{ color: 'var(--ink)' }}>{ profile?.username || playerName || 'INVITADO' }</div>
           </div>
           <div className="hud-stat">
             <div className="l">Puntuación</div>
