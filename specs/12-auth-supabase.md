@@ -1,6 +1,6 @@
 # SPEC 12 — Autenticación completa (email/password + OAuth)
 
-> **Status:** Aprobado · **Depends on:** 04-supabase-integracion-base · **Date:** 2026-06-25
+> **Status:** Implementado · **Depends on:** 04-supabase-integracion-base · **Date:** 2026-06-25
 > **Objective:** Reemplazar el sistema de auth mock (localStorage) por Supabase Auth real con
 > email/password, Google y GitHub; añadir perfil de usuario con username; asociar scores a
 > cuentas reales; mantener el modo invitado (sin guardar scores).
