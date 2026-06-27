@@ -48,20 +48,23 @@ Uses the **App Router** (`app/` directory). All layouts and pages are Server Com
 | `/detalle/[id]` | `app/detalle/[id]/page.tsx` | Game detail + per-game leaderboard |
 | `/player/[id]` | `app/player/[id]/page.tsx` | In-game HUD (score, level, lives, pause) |
 | `/auth` | `app/auth/page.tsx` | Login / signup tabs |
+| `/auth/reset` | `app/auth/reset/page.tsx` | Password recovery |
 | `/salon` | `app/salon/page.tsx` + `SalonTabs.tsx` | Hall of Fame — leaderboard tabs per game |
 | `/about` | `app/about/page.tsx` | About + contact form (Resend) |
 
 ### Games (`app/games/`)
 
-Each game has its own folder: `page.tsx`, `<Name>Game.tsx` (client component), `game.ts` (pure logic).
+Each game has its own folder: `page.tsx`, `<Name>Game.tsx` (client component), `game.ts` (pure logic), and `skins.ts` (per-game palettes; see Shared code).
 
 | Game | Route | Notes |
 |---|---|---|
-| Tetris | `/games/tetris` | Falling block puzzle |
+| Tetris | `/games/tetris` | Falling block puzzle; no `skins.ts` yet |
 | Asteroids | `/games/asteroids` | Space shooter |
 | Snake | `/games/snake` | Grid-based snake; sprite atlas in `public/` |
 | Arkanoid | `/games/arkanoid` | Brick breaker; `levels.ts` + `spritesheet.ts` |
-| and more... see C:\Users\edgar\Dev\ClaudeCode\05-arcade-vault\references\implemented-games.md
+| Frogger | `/games/frogger` | Road/river crossing; play screen at `play/page.tsx` |
+
+Full list & metadata in `references/implemented-games.md`.
 
 ### Shared code
 
@@ -72,13 +75,17 @@ Each game has its own folder: `page.tsx`, `<Name>Game.tsx` (client component), `
 - `lib/supabase/server.ts` — server-side Supabase client
 - `types/database.ts` — auto-generated Supabase types
 - `app/about/actions.ts` — `sendContact()` Server Action (Resend email)
+- `app/games/<slug>/skins.ts` — per-game palettes (`classic`/`retro`/`neon`) consumed via a `skinRef`; logic in `game.ts` stays palette-free. Coverage tracked in `references/game-with-themes.md`.
 
 ### Supabase schema
 
 | Table | Key columns |
 |---|---|
 | `games` | `id`, `name`, `slug`, `description`, `route`, `image_url` |
-| `scores` | `id`, `player_name`, `score`, `game_slug` (→ `games.slug`), `created_at` |
+| `scores` | `id`, `player_name`, `score`, `game_slug` (→ `games.slug`), `user_id` (→ `auth.users`), `created_at` |
+| `profiles` | `id` (→ `auth.users`), display name; auto-created by trigger on signup |
+
+**Schema changes go through versioned migrations in `supabase/migrations/`** — never edit the schema ad hoc.
 
 Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `RESEND_API_KEY`, `CONTACT_EMAIL`.
 
@@ -91,49 +98,25 @@ Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISH
 
 ## Spec-Driven Development
 
-This project follows Spec Driven Design using `/spec` and `/spec-impl` skills from:
-```bash
-npx skills@latest add Klerith/fernando-skills
-```
+Specs live in `specs/` (`01`–`13` implemented). Each spec file maps to a branch and PR.
+Themed game roadmaps live under `specs/game-jam/<slug>/` (spec variants to choose from).
 
-Specs live in `specs/` (01–10 implemented so far). Each spec file maps to a branch and PR.
+
+## Skills
+
+- **Local** (`.claude/skills/`):
+  - `add-game` — generates `specs/NN-<slug>.md` for a new canvas game (pure `game.ts`, React component, `games` row, leaderboard wiring). Specs only.
+  - `spec-impl-game` — implements an approved game spec, then chains `skin-designer` + `mobile-porter` over it.
+- **External** (`npx skills@latest add Klerith/fernando-skills`): `/spec`, `/spec-impl` — general spec-driven flow.
 
 
 ## Agents
 
-### `game-planner` (`.claude/Agents/game-planner.md`)
+Definitions in `.claude/Agents/`. Each works one game at a time and applies changes directly (except where noted).
 
-Curates the game catalog. Reads `references/implemented-games.md` (implemented) and
-`references/game-suggestions-todo.md` (previously suggested) to avoid repeats, then
-proposes one new game with a full `add-game`-ready spec sheet and appends it to the
-To-Do file as persistent memory.
-
-**When to use:** before starting a new game, invoke this agent to get a justified
-recommendation and a ready-to-use ficha. Then run `/add-game <slug>` to generate the spec.
-
-### `game-jam` (`.claude/Agents/game-jam.md`)
-
-Takes a **theme** (e.g. "deep ocean", "food", "retro horror") and designs **one** game that
-fits it, then generates a series of **incremental specs** (min 2, target 3) in
-`specs/game-jam/<slug>/` — `01-mvp-<slug>.md` plus enhancements, each chained via `Depends on`.
-Each spec follows the format of the approved specs (`07`/`08`/`09`) and the `add-game`
-invariants (pure `game.ts`, `startGame` contract, `scoreSaved` ref, `game_slug === slug`).
-Reads `references/implemented-games.md` and `references/game-suggestions-todo.md` to avoid
-repeats and appends the chosen game to the To-Do file as persistent memory. Writes specs only —
-never game code.
-
-**When to use:** to spin up a full incremental spec roadmap for a new themed game in one shot.
-Specs start as `Draft`; review them, then run `/spec-impl <ruta>` for each in order (MVP first).
-
-### `skin-designer` (`.claude/Agents/skin-designer.md`)
-
-Audits every game in `app/games/**` to ensure it offers at least 3 skins — `classic`
-(default), `neon`, and `retro` — and designs the specs to configure them. Each skin must
-read well on the dark background (`--bg #0a0a0f`); there is no light theme. Reuses the
-`globals.css` palette tokens and the per-game accent color from
-`references/implemented-games.md`. Keeps the `add-game` invariants (pure `game.ts`, no
-hardcoded palettes in the logic, `startGame` contract). Writes specs only — never game code.
-
-**When to use:** to audit skin coverage and generate the spec(s) for a shared skin system
-plus per-game palettes. Returns an audit report (game → skins present/missing/contrast risk);
-specs start as `Draft`, then run `/spec-impl <NN>-<slug>` for each.
+| Agent | What it does |
+|---|---|
+| `game-planner` | Picks the next game that fits the catalog; tracks suggestions in `references/game-suggestions-todo.md`. Produces a ficha for `/add-game`. **Specs/proposal only.** |
+| `game-jam` | From a **theme**, designs one game and writes 2 alternative spec variants in `specs/game-jam/<slug>/` to choose from. **Specs only.** |
+| `skin-designer` | Applies the 3 canonical skins (`classic`/`retro`/`neon`) to one game via `skins.ts` + `skinRef`; logs progress in `references/game-with-themes.md`. |
+| `mobile-porter` | Audits & fixes mobile responsiveness of one game against the SPEC 11 touch-controls pattern. |
