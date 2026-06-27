@@ -2,6 +2,9 @@ import Link from "next/link"
 import { createServerClient } from "@/lib/supabase/server"
 import SalonTabs from "./SalonTabs"
 
+// Los scores cambian con cada partida: renderizar siempre fresco, sin cachear.
+export const dynamic = "force-dynamic"
+
 export interface ScoreRow {
   player_name: string
   score: number
