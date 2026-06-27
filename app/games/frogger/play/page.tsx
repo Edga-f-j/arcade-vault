@@ -1,20 +1,21 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/app/_context/AuthContext';
 import { SKINS } from '../skins';
 import TouchGamepad, { type GamepadButton } from '@/app/games/_components/TouchGamepad';
 
 const FroggerGame = dynamic(() => import('../FroggerGame'), { ssr: false });
 
 export default function FroggerPlayPage() {
+  const { user, profile }       = useAuth();
   const [score, setScore]       = useState(0);
   const [lives, setLives]       = useState(3);
   const [level, setLevel]       = useState(1);
   const [paused, setPaused]     = useState(false);
   const [over, setOver]         = useState(false);
-  const [name, setName]         = useState('');
   const [saved, setSaved]       = useState(false);
   const [gameKey, setGameKey]   = useState(0);
   const [activeSkin, setActiveSkin] = useState(() => {
@@ -31,11 +32,6 @@ export default function FroggerPlayPage() {
     localStorage.setItem('av_skin_frogger', key);
   };
 
-  useEffect(() => {
-    const stored = localStorage.getItem('av_player_name');
-    if (stored) setName(stored);
-  }, []);
-
   function handleScoreChange(s: number) { setScore(s); }
   function handleLivesChange(l: number) { setLives(l); }
   function handleLevelChange(l: number) { setLevel(l); }
@@ -43,19 +39,20 @@ export default function FroggerPlayPage() {
   function handleGameOver(finalScore: number) {
     setScore(finalScore);
     setOver(true);
+    saveScore(finalScore);
   }
 
-  async function handleSave() {
-    if (scoreSaved.current) return;
+  async function saveScore(value: number) {
+    if (scoreSaved.current || value <= 0) return;
+    if (!user || !profile) return;
     scoreSaved.current = true;
     setSaved(true);
-    const trimmed = name.trim() || 'INVITADO';
-    localStorage.setItem('av_player_name', trimmed);
     const supabase = createClient();
     await supabase.from('scores').insert({
-      player_name: trimmed,
+      player_name: profile.username,
       game_slug: 'frogger',
-      score,
+      score: value,
+      user_id: user.id,
     });
   }
 
@@ -82,7 +79,7 @@ export default function FroggerPlayPage() {
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <div className="hud-stat">
             <div className="l">Jugador</div>
-            <div className="v" style={{ color: 'var(--ink)' }}>{name || 'INVITADO'}</div>
+            <div className="v" style={{ color: 'var(--ink)' }}>{profile?.username || 'INVITADO'}</div>
           </div>
           <div className="hud-stat">
             <div className="l">Puntuación</div>
@@ -166,35 +163,15 @@ export default function FroggerPlayPage() {
                 <div className="mono" style={{ fontSize: 13, color: 'var(--ink-dim)', letterSpacing: '0.12em' }}>
                   PUNTUACIÓN FINAL: <span style={{ color: 'var(--ink)' }}>{score.toLocaleString('es-ES')}</span>
                 </div>
-                <input
-                  type="text"
-                  maxLength={20}
-                  placeholder="TU NOMBRE"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  disabled={saved}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--ink-dim)',
-                    color: 'var(--ink)',
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                    letterSpacing: '0.12em',
-                    padding: '8px 14px',
-                    textAlign: 'center',
-                    outline: 'none',
-                    width: 200,
-                    opacity: saved ? 0.5 : 1,
-                  }}
-                />
-                <button
-                  className="btn yellow"
-                  onClick={handleSave}
-                  disabled={saved}
-                  style={{ opacity: saved ? 0.5 : 1, cursor: saved ? 'default' : 'pointer' }}
-                >
-                  {saved ? 'GUARDADO ✓' : 'GUARDAR SCORE'}
-                </button>
+                {user && profile ? (
+                  <div className="mono" style={{ fontSize: 11, color: saved ? 'var(--green)' : 'var(--ink-dim)', letterSpacing: '0.12em' }}>
+                    {saved ? 'PUNTUACIÓN GUARDADA ✓' : 'GUARDANDO…'}
+                  </div>
+                ) : (
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--magenta)', letterSpacing: '0.12em' }}>
+                    INICIA SESIÓN PARA GUARDAR TU PUNTUACIÓN
+                  </div>
+                )}
                 <button className="btn ghost" onClick={handleRestart}>
                   JUGAR DE NUEVO
                 </button>
